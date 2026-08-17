@@ -1,0 +1,16 @@
+AUDIO TEST STATUS - 1.1.0
+
+The core produces 44,100 Hz PCM through CPU-clocked pulse, triangle, noise and
+DMC channels, the NES nonlinear pulse/TND mixer, and cycle-interval averaging.
+SDL3 consumes that PCM directly.
+
+Automated coverage:
+- timer, sweep, envelope, length, linear-counter, noise-LFSR and DMC behavior;
+- four-step/five-step frame counter and CPU IRQ entry;
+- DMA-sized resampling regression;
+- locked short, title, gameplay and Air Man PCM identities;
+- pinned Mesen timer and mixer differential vectors.
+
+Manual playback passed after cycle-interval averaging removed the former
+batch-emission crackle. Exact analog/transistor equivalence and rare DMC/OAM DMA
+collision glitches are not claimed.

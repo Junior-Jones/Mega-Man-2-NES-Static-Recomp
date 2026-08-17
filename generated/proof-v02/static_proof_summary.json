@@ -1,0 +1,27 @@
+{
+  "rom": {
+    "file_size": 262160,
+    "sha256": "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf",
+    "payload_crc32": "0FCFC04D",
+    "mapper": 1,
+    "prg_bytes": 262144,
+    "chr_bytes": 0,
+    "nmi_vector": "CFF0",
+    "reset_vector": "FFE0",
+    "irq_vector": "FFE0"
+  },
+  "format": "mega-man-2-static-seed-proof-v2",
+  "scope": "direct graph from RESET/NMI/IRQ in MMC1 reset mapping only",
+  "initial_mapping": {
+    "8000-BFFF": "physical 16 KiB bank 0",
+    "C000-FFFF": "physical 16 KiB bank 15"
+  },
+  "proven_instruction_records": 317,
+  "unique_nodes": 317,
+  "definite_or_indexed_mapper_write_sites": 2,
+  "unresolved_boundaries": 2,
+  "whole_rom_static_recomp_complete": false,
+  "runtime_opcode_fetch_decode_allowed": false,
+  "interpreter_fallback_allowed": false,
+  "acceptance_decision": "milestone_02_foundation_only_fail_closed"
+}

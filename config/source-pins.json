@@ -1,0 +1,34 @@
+{
+  "format": "mega-man-2-static-recomp-source-pins-v5",
+  "date": "2026-07-22",
+  "upstream_vendored_in_package": false,
+  "generator": {
+    "repository": "mstan/nesrecomp",
+    "commit": "f85051decadd3f4fab8ab0d15b4ace1b3df19764",
+    "executable_sha256": "f8287544e29091cc87b30c96a618fb6bf8e12a2fefcec9f489c5db112e6849d2",
+    "materialized_under_project_tools": true,
+    "locally_modified": false,
+    "build_verified": true,
+    "reviewed_configuration_sha256": "c84d1d965948f03e5ad3f03299da97db7a3e17ccd81226f7b7d27a5f8256618a",
+    "production_generated_core_accepted": false,
+    "reason": "reviewed configuration improves every tracked metric but still reports 643 finder suspects, 42045 BRK classifications, 63248 skipped-side-effect instructions and 17381 halt classifications"
+  },
+  "oracle": {
+    "repository": "nesdev-org/MesenCE",
+    "commit": "40335ce7359168559dc1f3fc99445230b9041fed",
+    "materialized_under_project_tools": true,
+    "locally_modified": false,
+    "build_verified": false,
+    "reason": "exact revision requires .NET 10; installed SDK is 8.0.300"
+  },
+  "quarantined_reference": {
+    "repository": "lsmmega/mm2",
+    "commit": "1b6cf40e1a46d28b5718cf782c241e10a4d0f781",
+    "materialized_under_project_tools": true,
+    "locally_modified": false,
+    "accepted_for_exact_rom_boundaries": false,
+    "reference_rom_sha1": "6b5b9235c3f630486ed8f07a133b044eaa2e22b2",
+    "project_rom_sha1": "2290d8d839a303219e9327ea1451c5eea430f53d",
+    "reason": "ROM mismatch; no labels or code/data boundaries imported"
+  }
+}

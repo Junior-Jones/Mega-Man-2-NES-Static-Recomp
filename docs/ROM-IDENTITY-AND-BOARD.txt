@@ -1,0 +1,7 @@
+MEGA MAN 2 ROM IDENTITY AND BOARD NOTES
+
+The accepted ROM is the standard Mega Man 2 (USA) iNES image listed in config/expected_rom.txt. The iNES header declares mapper 1, 16 PRG units and no CHR ROM. This means 256 KiB PRG ROM and CHR RAM.
+
+Public cartridge databases identify the matching PRG CRC32 0FCFC04D as an SGROM-family board with MMC1B2 and 8 KiB VRAM/CHR RAM. The old iNES header cannot encode all board details, so the project binds identity using full-file SHA-256 plus database evidence instead of relying on mapper number alone.
+
+The lsmmega/mm2 disassembly is a valuable symbol and source-layout reference, but its README/header identity must not automatically replace this project's exact-ROM identity. Any imported address, label or rebuilt binary must be compared against the accepted ROM before promotion.

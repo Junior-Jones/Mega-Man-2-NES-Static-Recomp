@@ -1,0 +1,18 @@
+BUILDING MEGA MAN 2 STATIC RECOMP 1.1.0 ON WINDOWS
+
+Requirements:
+- Windows 10 or 11
+- Visual Studio 2022 with Desktop development with C++
+- CMake 3.20 or later
+- Internet access for the first SDL 3.4.10 configure
+
+Commands:
+  cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+  cmake --build build --config Release --target mega-man-2-launcher
+  ctest --test-dir build -C Release --output-on-failure
+
+For exact-ROM certification, configure with:
+  -DMM2_TEST_ROM="path to Mega Man 2 (USA).nes"
+
+The executable and its portable support files are written to build/release.
+The ROM is never copied into the build or release package.

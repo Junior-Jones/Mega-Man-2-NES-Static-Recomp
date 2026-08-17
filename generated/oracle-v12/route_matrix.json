@@ -1,0 +1,40 @@
+{
+  "format": "mega-man-2-visual-audio-state-oracle-matrix-v1",
+  "version": "1.1.0",
+  "rom_sha256": "49136B412FF61BEAC6E40D0BBCD8691A39A50CD2744FDCDDE3401EED53D71EDF",
+  "route": "title-to-air-man-controlled",
+  "checkpoints": [
+    {
+      "frame": 1200,
+      "meaning": "stage-select",
+      "bmp_sha256": "70239777CBCF39DE9F915F08299AD129E4CF656567B902C54E359273B2CCD753"
+    },
+    {
+      "frame": 1600,
+      "meaning": "air-man-intro",
+      "bmp_sha256": "768FF2B01CA4EB408A1EB90563EE38DBC4E24A84E803E6F63904552126F5C33B"
+    },
+    {
+      "frame": 2000,
+      "meaning": "air-man-gameplay-entry",
+      "bmp_sha256": "BCA52ABC60962C85C7790F8224A86C4BA4DF01988BC3F47B072062E8836CF70A"
+    },
+    {
+      "frame": 2400,
+      "meaning": "air-man-gameplay-progression",
+      "bmp_sha256": "A616FF5C160234FBC4A3B9C6622D962A4D269160A2A1C397DE50EE38AAC1E214"
+    }
+  ],
+  "final_state": {
+    "ppu_frames": 4000,
+    "framebuffer_hash_fnv1a64": "C3615D04705B279A",
+    "gameplay_frame_hash_fnv1a64": "FE9FE3CBA6BC8C03",
+    "gameplay_sprite_pixels": 775,
+    "controller_reads": 31520,
+    "pcm_total_samples": 2935182,
+    "pcm_hash_fnv1a64": "CD29F298AE150705",
+    "pcm_peak": 12404,
+    "trap": "none"
+  }
+}
+

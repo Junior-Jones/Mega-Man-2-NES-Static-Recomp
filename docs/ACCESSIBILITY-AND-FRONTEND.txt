@@ -1,0 +1,29 @@
+ACCESSIBILITY AND FRONTEND - 1.1.0
+
+Launcher.exe uses standard Win32 menus, buttons, check boxes, combo boxes, and
+dialogs so keyboard navigation and Windows UI Automation expose names, roles,
+states, focus, and disabled controls.
+
+The launcher and game are one process and one top-level window. Escape switches
+from gameplay to the launcher, pauses the core and SDL3 audio, and focuses Play.
+Play or Escape resumes the same core and returns to the game view.
+
+Browse validates an exact Mega Man 2 (USA) ROM without starting it. Run starts
+the selected ROM. Snapshot and screenshot menu commands are disabled until a
+game exists. Their output folders are created only when a file is first written.
+
+Mega Man 2 is a one-player game. The bindings window therefore exposes only
+Player 1: arrows for the D-pad, F for A, D for B, S for Start, and A for Select.
+F1 through F8 and Escape are reserved launcher shortcuts and cannot be assigned
+as gameplay controls.
+
+The same window exposes Keyboard, Gamepad, and Keyboard + gamepad choices plus
+an adjustable stick deadzone. The bundled controller adapter loads
+gamecontrollerdb.txt, reconnects hot-plugged devices, applies analog hysteresis,
+and maps D-pad/left stick, west/south face buttons, Start and Back to NES input.
+
+The visual frontend was reviewed at 100 percent display scaling. The launcher,
+File and Settings menus, frontend settings, controller bindings, controls guide,
+About dialog, game view, and paused launcher view showed no clipped or overlapping
+controls after the 1.1.0 layout corrections. The game view preserves the enabled
+4:3 correction with black pillarboxing rather than stretching.

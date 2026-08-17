@@ -1,0 +1,14 @@
+TOOLS AND ORACLE STATUS - 1.1.0
+
+The exact ROM, NESRecomp executable and local Mesen checkout are development
+inputs only and are not included in either release package.
+
+Generated evidence retained in this source tree:
+- accepted physical-bank/PC program map and reviewed generation receipt;
+- 20,149 generated instruction identities in six bank shards;
+- title, controlled-gameplay, four-checkpoint and eight-stage oracles;
+- pinned Mesen CPU/APU/PPU differential reference.
+
+All accepted generated code is reproducible from the checked-in scripts and
+pinned inputs. Missing bank/PC identities hard-trap; no runtime opcode decoder,
+interpreter, JIT or external emulator fallback is present.

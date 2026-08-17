@@ -1,0 +1,28 @@
+MEGA MAN 2 STATIC RECOMP 1.1.0 TEST MATRIX
+
+ROM-free gates:
+1. Strict MSVC /W4 /WX build.
+2. MMC1, generated seed, direct-core and snapshot self-tests.
+3. Runtime-hook and shared headed/headless frame-path checks.
+4. APU timer/mixer/resampler/IRQ self-test.
+5. Dot-timed PPU sprite evaluation, overflow and sprite-zero self-test.
+6. Pinned Mesen CPU/APU/PPU differential trace.
+7. Generated source, program-map and receipt integrity checks.
+8. Opaque-core, subsystem-boundary and strict-static source scans.
+9. Whole-ROM scope certification: unclassified bytes remain explicitly unclaimed.
+
+Exact-ROM gates:
+1. ROM identity and 100,000-instruction smoke.
+2. First-frame, title/input, controlled gameplay and screenshot routes.
+3. Four-checkpoint graphics/audio/state oracle.
+4. All eight Robot Master stage load and visual oracles.
+5. Exact APU PCM identities.
+6. Multipart Metal Man route and snapshot continuity.
+
+Release gates:
+1. Portable Launcher.exe starts without third-party DLLs.
+2. Controller settings expose Keyboard, Gamepad and combined input, with the
+   bundled mapping database available beside Launcher.exe and no-device fallback.
+3. Release contains no ROM and no pre-created empty output folders.
+4. Source archive contains no binaries, media, caches or nested archives.
+5. Both ZIP files pass CRC, duplicate-name and SHA-256 checks.

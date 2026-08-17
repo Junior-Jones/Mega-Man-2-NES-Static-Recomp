@@ -1,0 +1,18 @@
+{
+  "format": "mega-man-2-rom-identity-v1",
+  "title": "Mega Man 2 (USA)",
+  "file_bytes": 262160,
+  "sha256": "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf",
+  "sha1": "2290d8d839a303219e9327ea1451c5eea430f53d",
+  "md5": "8e4bc5b03ffbd4ef91400e92e50dd294",
+  "payload_crc32": "0FCFC04D",
+  "payload_sha1": "2ec08f9341003ded125458df8697ca5ef09d2209",
+  "mapper": 1,
+  "board_family": "MMC1/SxROM; database match SGROM with MMC1B2",
+  "prg_bytes": 262144,
+  "chr_rom_bytes": 0,
+  "chr_ram_bytes": 8192,
+  "nmi_vector": "CFF0",
+  "reset_vector": "FFE0",
+  "irq_vector": "FFE0"
+}

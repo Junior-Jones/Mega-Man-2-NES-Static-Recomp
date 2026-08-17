@@ -1,0 +1,180 @@
+MEGA MAN 2 STATIC-CORE ARCHITECTURE IMPROVEMENT PLAN
+
+Implementation order
+
+1. OPAQUE CORE BOUNDARY
+   Hide MM2DirectCore's layout from the launcher. Add lifecycle, read-only
+   observation, framebuffer/audio access and temporary state-transfer APIs.
+   Research executables that genuinely require writable machine inspection use
+   an explicitly internal header.
+
+2. UNIFIED FRAME AND OUTPUT API
+   Add a core-owned advance-frame operation, framebuffer conversion/copy API and
+   bounded PCM queue. Replace the launcher's instruction loop and direct ring
+   buffer handling with that interface.
+
+3. CORE-OWNED SNAPSHOTS
+   Move snapshot files out of the Windows frontend. Add payload hashes, exact-ROM
+   binding, trailing-data rejection, atomic replacement and explicit versioning.
+
+4. CURRENT-RUNTIME HOOKS
+   Add instruction-before/after, bus, completed-frame checkpoint and frontier
+   events with deterministic stop/resume semantics.
+
+5. ONE HEADED/HEADLESS EXECUTION PATH
+   Migrate route tools to the frame API and hooks so the launcher and tests drive
+   the same runtime behavior. Retain narrowly scoped internal test access only
+   for state-search experiments that intentionally clone or patch machine state.
+
+6. SUBSYSTEM MODULE BOUNDARIES
+   Split the current direct-core implementation into CPU helpers, NES bus, PPU,
+   APU and scheduler modules behind the opaque core boundary.
+
+7. SHARD GENERATED CPU CASES
+   Split the 20,149 generated bank/PC identities into deterministic bank/address
+   groups with a small dispatch index. Preserve clean-regeneration hashes and the
+   fail-closed missing-identity trap.
+
+Why this order
+
+The public boundary must be stable before new APIs are added. Frame/audio access
+then permits snapshots and hooks to live in the core. Once headed and headless
+callers share that API, internal subsystem separation and generated-code sharding
+can be performed without repeatedly changing the launcher contract.
+
+Status
+
+1. Opaque core boundary: COMPLETE (2026-08-17).
+   The Windows runtime now owns an allocated opaque core and uses lifecycle,
+   framebuffer, PCM, trap and state-transfer APIs. A registered architecture
+   test prevents private-layout leakage back into the public header or frontend.
+2. Unified frame and output API: COMPLETE (2026-08-17).
+   The core now advances exactly one emulated frame per call and returns an
+   explicit completion/trap result. Indexed and BGRA frame copies prevent the
+   launcher from borrowing core memory. A bounded 8,192-sample PCM queue owns
+   producer/consumer state, drops the oldest sample on overflow and exposes an
+   overflow flag. The Windows runtime no longer steps instructions or follows
+   the diagnostic PCM history ring.
+3. Core-owned snapshots: COMPLETE (2026-08-17).
+   The core owns a versioned snapshot format with exact-ROM SHA-256 and
+   generated-core identity binding, a SHA-256 payload digest, strict payload
+   length/EOF validation and checked state invariants. Saves flush a temporary
+   file before atomic replacement. Transient host-consumer audio is excluded;
+   failed loads do not alter the running core. The Windows frontend now only
+   supplies the UTF-8 path and resets its presentation filter after a load.
+4. Current-runtime hooks: COMPLETE (2026-08-17).
+   Optional filtered callbacks now report instruction-before/after, CPU-bus
+   read/write, completed-frame and missing-identity frontier events. Every
+   event carries a monotonic sequence, instruction/cycle/frame position,
+   identity, PC and relevant bus value. Stops at instruction-before prevent
+   execution; bus/frame/after stops latch until the instruction is complete.
+   Resume is deterministic, callback re-entry is guarded, and hook pointers,
+   filters, sequence and stop state are excluded from persisted snapshots.
+5. One headed/headless execution path: COMPLETE (2026-08-17).
+   The launcher and ordinary headless routes now execute through the same
+   core-owned one-frame API. Headless evidence uses opaque allocated cores,
+   copied framebuffer/APU/PCM output, read-only observations and runtime hooks;
+   it no longer steps instructions or includes the private machine layout. The
+   direct-core, APU and hook certification tests retain internal access, as does
+   the Metal Man state-search planner because it intentionally clones and
+   scores writable trial states. Exact comparisons preserved the 240-frame
+   full-state result, controlled-gameplay receipt, four checkpoint oracle and
+   all eight stage-select image hashes.
+6. Subsystem module boundaries: COMPLETE (2026-08-17).
+   The opaque library now compiles CPU flag/stack/interrupt helpers, NES CPU
+   bus routing, PPU memory/register/rendering, APU register/frame/sample logic
+   and CPU-to-PPU/APU scheduling as five separate internal modules. The direct
+   core coordinator retains lifecycle, hooks, state transfer, frame execution
+   and generated-case dispatch. The machine layout and public API did not
+   change. A registered architecture test prevents these boundaries from
+   collapsing back into the coordinator. Exact smoke, snapshot, hook, shared
+   frame, controlled-gameplay, four-checkpoint and eight-stage oracles passed
+   without changed instruction, graphics or audio hashes.
+7. Shard generated CPU cases: COMPLETE (2026-08-17).
+   The 20,149 accepted identities now compile as six deterministic physical-bank
+   translation units (09 and 0B-0F) behind a seven-entry generated source tree:
+   six PC switches plus one small bank dispatcher. Missing banks and missing PCs
+   return failure to the core coordinator, which retains the fail-closed
+   missing-identity trap and frontier event. The receipt records every source
+   hash, an ordered tree hash and exact per-bank identity counts; clean
+   regeneration compares the complete generated file set byte-for-byte.
+   Sharding exposed an old C evaluation-order dependency in RTS/RTI stack pulls.
+   The generator now sequences status, low and high byte pulls explicitly.
+   A 100,000-instruction pre/post trace and every locked route oracle match.
+
+Post-architecture accuracy work for 1.1.0
+
+8. PULSE SWEEP AND FUNCTIONAL DMC
+   COMPLETE (2026-08-17). Pulse channels now own sweep reload/divider/target
+   behavior including the channel-1 negate adjustment and overflow muting.
+   DMC now implements the NTSC rate table, $4010-$4013 configuration, $4015
+   start/stop and status, fixed-bank sample reads, $FFFF-to-$8000 wrapping,
+   buffering, LSB-first delta output, saturation, looping, IRQ latching and a
+   deterministic four-cycle CPU stall per fetch. DMC stalls also advance PPU,
+   APU and sample cadence through the common scheduler. A ROM-free structural
+   test covers sweep, fetch, stall, IRQ, loop and disable behavior; the exact-ROM
+   test locks output 60 after consuming byte $85. Mega Man 2 does not write the
+   sweep or DMC registers on the locked routes, so all existing music, gameplay
+   and stage hashes remain unchanged.
+
+9. APU FRAME COUNTER AND CPU IRQ DELIVERY
+   COMPLETE (2026-08-17). The NTSC frame sequencer now follows the six timing
+   boundaries used by the pinned local Mesen reference: four-step quarter/half
+   clocks, the three-cycle frame-IRQ assertion window, and the longer five-step
+   sequence without a frame IRQ. $4017 writes apply after the hardware parity-
+   dependent three/four CPU-cycle delay; IRQ inhibit takes effect immediately,
+   clears the latch, and five-step application clocks both units while blocking
+   a colliding sequencer tick. $4015 reports and clears only the frame IRQ.
+   The CPU now gives NMI priority, then services an asserted frame or DMC IRQ
+   when I is clear, pushing PC and status with B clear, reading the mapped IRQ
+   vector, setting I and charging seven cycles through the common scheduler.
+   Structural tests lock IRQ boundaries, status clearing, inhibit, delayed
+   five-step application, no five-step IRQ and the complete CPU stack/vector
+   entry sequence. The approved waveform and every locked route hash remained
+   unchanged because Mega Man 2 inhibits the frame IRQ on its certified routes.
+
+10. TIMER SEQUENCERS AND NES NONLINEAR MIXER
+   COMPLETE (2026-08-17). Pulse sequencers now clock every 2*(period+1) CPU
+   cycles with the four hardware duty patterns; triangle clocks every period+1
+   CPU cycles while its length and linear counters permit it, retaining its DAC
+   output when halted; and noise uses the 16-entry NTSC period table plus the
+   mode-selectable bit-1/bit-6 LFSR tap. Sampling no longer advances any channel.
+   The mixer now uses the NES two-pulse and triangle/noise/DMC nonlinear curves
+   and Mesen-compatible channel weights. Each CPU cycle contributes its current
+   nonlinear DAC level to a 44.1 kHz interval average. This also repairs an old
+   batch-emission defect where a 513-cycle sprite DMA produced repeated copies
+   of one final channel state and then an audible discontinuity. The DMA-sized
+   regression requires twelve samples with changing output and retained partial
+   interval state. On the four-checkpoint Air Man route, cycle averaging reduced
+   raw sample-delta energy from 2,582,206,688 to 810,362,546 (about 69 percent)
+   without changing CPU, framebuffer, input or stage results. Manual playback
+   was approved after the crackling correction. New locked PCM identities are
+   AFF34F312F210308 for the short waveform, EF91D83B8A8A3433 for the title route,
+   F92DDABB590F6DF0 for controlled gameplay and CD29F298AE150705 for Air Man.
+
+11. DOT-TIMED PPU SPRITE EVALUATION
+   COMPLETE (2026-08-17). Visible-scanline dots 1-64 clear secondary OAM and
+   dots 65-256 evaluate primary OAM. The eight selected sprites and sprite-zero
+   membership transfer at dot 257. Overflow now asserts during evaluation, and
+   sprite-zero hit is tested at the actual visible dot with left-column masks,
+   rendering enables, the x=255 exclusion and pre-render clearing. The final
+   framebuffer pass only composites pixels; it no longer invents PPU timing.
+   A ROM-free test locks overflow at dot 130 for nine in-range sprites and the
+   first sprite-zero overlap at scanline 1, dot 1. Every exact visual oracle is
+   unchanged.
+
+12. PINNED MESEN DIFFERENTIAL TRACES
+   COMPLETE (2026-08-17). A machine-readable reference pins Mesen commit
+   4b99a0f2a6d0771695abd99d3c0de19b49615420 and the SHA-256 of every inspected
+   CPU/APU/PPU source file. The deterministic differential trace locks CPU IRQ
+   vector/stack/cycles, the APU 29828-cycle frame IRQ and delayed $4017 write,
+   pulse/triangle/noise timer transitions, nonlinear mixer vectors, PPU sprite
+   overflow at dot 130 and sprite-zero hit at scanline 1 dot 1. The registered
+   verifier rejects either a changed reference or changed runtime trace.
+
+Not yet claimed for DMC: odd/even DMA startup and disable delays, OAM/DMC DMA
+collisions, sample-duplication glitches or transistor-level output equivalence.
+Instruction-granularity register writes also do not claim transistor-edge APU
+timing beyond the explicitly tested $4017 three/four-cycle application rules.
+The cycle-interval average is a deterministic anti-aliasing filter; it does not
+claim the exact impulse response of Mesen's blip-buffer presentation path.

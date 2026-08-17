@@ -1,0 +1,15 @@
+RUNTIME AND HEADED TEST LIFECYCLE - 1.1.0
+
+Launcher.exe owns one process containing the Windows frontend and the static
+core. Run validates and loads the selected ROM, then starts the game window.
+Escape switches focus and visibility between game and Launcher without creating
+another process or changing execution engines.
+
+The launcher and ordinary headless tools both advance the same opaque,
+core-owned frame API. Tests obtain copied framebuffer and PCM output plus
+read-only observations and hooks. Only named certification/state-search tools
+may include the private core layout.
+
+Pausing stops frame scheduling and the SDL3 audio stream. Snapshot loads restore
+core state, reset transient presentation state and continue through the same
+runtime. Completed headed tests return focus to their results control.

@@ -1,0 +1,99 @@
+mapping_low_bank,cpu_pc,effective_banks,proof
+0,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+0,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+0,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+0,C66A,00 05 06,bounded callers 0..6 through exact ROM tables $C690/$C6BE/$C697
+0,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+0,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+0,CB60,00,A=$29 current bank saved at $CB13 and restored by PLA
+1,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+1,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+1,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+1,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+1,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+1,CB60,01,A=$29 current bank saved at $CB13 and restored by PLA
+2,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+2,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+2,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+2,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+2,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+2,CB60,02,A=$29 current bank saved at $CB13 and restored by PLA
+3,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+3,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+3,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+3,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+3,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+3,CB60,03,A=$29 current bank saved at $CB13 and restored by PLA
+4,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+4,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+4,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+4,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+4,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+4,CB60,04,A=$29 current bank saved at $CB13 and restored by PLA
+5,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+5,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+5,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+5,C66A,00 05 06,bounded callers 0..6 through exact ROM tables $C690/$C6BE/$C697
+5,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+5,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+5,CB60,05,A=$29 current bank saved at $CB13 and restored by PLA
+6,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+6,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+6,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+6,C66A,00 05 06,bounded callers 0..6 through exact ROM tables $C690/$C6BE/$C697
+6,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+6,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+6,CB60,06,A=$29 current bank saved at $CB13 and restored by PLA
+7,C498,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,bounded inline stream bank byte projected to MMC1 P bits
+7,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+7,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+7,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+7,CB4A,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,exact-ROM split pointer table bank byte projected to MMC1 P bits
+7,CB60,07,A=$29 current bank saved at $CB13 and restored by PLA
+8,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+8,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+8,CB60,08,A=$29 current bank saved at $CB13 and restored by PLA
+9,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+9,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+9,CB60,09,A=$29 current bank saved at $CB13 and restored by PLA
+10,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+10,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+10,CB60,0A,A=$29 current bank saved at $CB13 and restored by PLA
+11,C19A,00 01 02 03 04 05 06 07,A=$2A AND $07
+11,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+11,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+11,C70C,08 09 0B,caller constants preserved by PHA/PLA at $C5F1
+11,C96F,00 01 02 03 04 05 06 07,A=$2A AND $07
+11,CA12,0B,A=$29 saved before temporary switch and restored by PLA
+11,CB34,00 01 02 03 04 05 06 07,A=$2A AND $07
+11,CB60,0B,A=$29 current bank saved at $CB13 and restored by PLA
+11,CBC7,00 01 02 03 04 05 06 07,A=$2A AND $07
+12,C04E,0C,A=$69 saved on entry to $C000 and restored for tail call
+12,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+12,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+12,CB60,0C,A=$29 current bank saved at $CB13 and restored by PLA
+12,D0C3,0C,A=$29 current-bank invariant
+13,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+13,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+13,C66A,00 05 06,bounded callers 0..6 through exact ROM tables $C690/$C6BE/$C697
+13,C70C,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,"bounded $0440,X bank-tag writers projected to MMC1 P bits"
+13,C78D,00,all four callers execute LDX #$00 before $C760
+13,C96F,00 01 02 03 04 05 06 07,A=$2A AND $07
+13,CA12,0D,A=$29 saved before temporary switch and restored by PLA
+13,CB60,0D,A=$29 current bank saved at $CB13 and restored by PLA
+14,C19A,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,C461,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,C4D1,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+14,C7A8,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,C7CD,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,C96F,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,CA1A,0E,A=$29 saved before temporary switch and restored by PLA
+14,CB34,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,CB60,0E,A=$29 current bank saved at $CB13 and restored by PLA
+14,CBC7,00 01 02 03 04 05 06 07,A=$2A AND $07
+14,D65C,00 01 02 03 04 05 06 07,A=$2A AND $07
+15,C4AF,00 01 02 03 04 05 06 07,A=$2A AND $07
+15,C537,00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F,caller bank byte restored from bounded stack frame
+15,CB60,0F,A=$29 current bank saved at $CB13 and restored by PLA

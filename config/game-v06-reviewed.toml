@@ -1,0 +1,232 @@
+# Exact-ROM-reviewed milestone-06 NESRecomp configuration.
+#
+# This deliberately disables heuristic pointer and secondary discovery. Only
+# vector-reachable control flow, the reviewed MMC1 bank-switch routine, and
+# explicitly proved entries are admitted. It is a conservative program-map
+# experiment, not yet a complete production-core configuration.
+
+[game]
+output_prefix = "mm2_reviewed_v06"
+disable_ptr_scan = true
+disable_secondary = true
+
+[mapper]
+bank_switch = [0xC000]
+
+[functions]
+fixed = [0xFFE0, 0xCFF0]
+bank12 = [0x8000]
+bank14 = [0x8000]
+
+# Exact split-pointer contracts. `adjust = 0` because these tables contain
+# executable entry addresses, not RTS-minus-one stack return addresses.
+[[known_split_table]]
+bank = 11
+lo_addr = 0x8047
+hi_addr = 0x8055
+count = 14
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x82D9
+hi_addr = 0x82DE
+count = 5
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x84F3
+hi_addr = 0x84F7
+count = 4
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x864E
+hi_addr = 0x8652
+count = 4
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x8796
+hi_addr = 0x879A
+count = 4
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x894C
+hi_addr = 0x8951
+count = 5
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x8B16
+hi_addr = 0x8B1B
+count = 5
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x8CBB
+hi_addr = 0x8CBF
+count = 4
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x8E08
+hi_addr = 0x8E0C
+count = 4
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x9205
+hi_addr = 0x920C
+count = 7
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x9395
+hi_addr = 0x9398
+count = 3
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x9662
+hi_addr = 0x9668
+count = 6
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x96BC
+hi_addr = 0x96BE
+count = 2
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x9B1C
+hi_addr = 0x9B23
+count = 7
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x9FBD
+hi_addr = 0x9FC8
+count = 11
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0x9FC0
+hi_addr = 0x9FCB
+count = 8
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0xA100
+hi_addr = 0xA106
+count = 6
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 11
+lo_addr = 0xA930
+hi_addr = 0xA939
+count = 9
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 14
+lo_addr = 0x84DC
+hi_addr = 0x84E5
+count = 9
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 14
+lo_addr = 0x8783
+hi_addr = 0x878F
+count = 12
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 14
+lo_addr = 0x92F0
+hi_addr = 0x9370
+count = 127
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 14
+lo_addr = 0x9470
+hi_addr = 0x947F
+count = 8
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 15
+lo_addr = 0xDCB8
+hi_addr = 0xDCC4
+count = 12
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 15
+lo_addr = 0xDD14
+hi_addr = 0xDD24
+count = 16
+stride = 1
+adjust = 0
+
+[[known_split_table]]
+bank = 15
+lo_addr = 0xE986
+hi_addr = 0xE98F
+count = 9
+stride = 1
+adjust = 0
+
+# The two bounded inline little-endian target tables used by JSR $8556.
+[[known_table]]
+bank = 12
+start = 0x85C5
+end = 0x85D3
+
+[[known_table]]
+bank = 12
+start = 0x87C3
+end = 0x87D7

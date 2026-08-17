@@ -1,0 +1,3 @@
+low_bank,cpu_pc,kind,mnemonic,mode,detail
+0,D097,mmc1_write_boundary,STA,ABS,mapper write may change the active 16 KiB bank; value flow is not proven in milestone 01
+0,FFE1,mmc1_write_boundary,INC,ABS,mapper write may change the active 16 KiB bank; value flow is not proven in milestone 01

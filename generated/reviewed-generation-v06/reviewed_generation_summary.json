@@ -1,0 +1,55 @@
+{
+  "format": "mega-man-2-reviewed-generation-audit-v06",
+  "version": "1.1.0",
+  "milestone": 6,
+  "tool": {
+    "repository": "mstan/nesrecomp",
+    "commit": "f85051decadd3f4fab8ab0d15b4ace1b3df19764",
+    "executable_sha256": "f8287544e29091cc87b30c96a618fb6bf8e12a2fefcec9f489c5db112e6849d2"
+  },
+  "rom_sha256": "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf",
+  "reviewed_config_sha256": "2fc2f3ab1f56ddf11e56f73749ec88a804e1a0225927033a0daa5e920d53bcd4",
+  "program_map_sha256": "748839837b0d15ca62c2a0eab5fa8916858f411586b158a90d2400a9a7e62121",
+  "command": [
+    "NESRecomp.exe",
+    "Mega Man 2 (USA).nes",
+    "--game",
+    "game-v06-reviewed.toml"
+  ],
+  "metrics": {
+    "functions_discovered": 4203,
+    "functions_analyzed": 4199,
+    "reachable_instructions": 562696,
+    "false_positive_suspects": 643,
+    "reachable_brk": 42045,
+    "reachable_sized_skip": 63248,
+    "reachable_halt": 17381
+  },
+  "improvement_from_v03": {
+    "functions_discovered": 2954,
+    "functions_analyzed": 164,
+    "reachable_instructions": 185109,
+    "false_positive_suspects": 193,
+    "reachable_brk": 15189,
+    "reachable_sized_skip": 31845,
+    "reachable_halt": 12202
+  },
+  "artifacts": {
+    "coverage_sha256": "f46320fec46dfb1dc9cb827c8171c57ab73fde626d3d3ae59f5aef57ca2bfed1",
+    "generated_tree_sha256": "bdc0ab7f6898756a8dc6a71c3a36cbcfe351de71f2b685987893fec56984e520"
+  },
+  "reviewed_configuration_used": true,
+  "deterministic_regeneration_required": true,
+  "production_core_accepted": false,
+  "acceptance_gate_worked": true,
+  "rejection_reasons": [
+    "643 finder false-positive suspects remain",
+    "42045 reachable BRK classifications remain",
+    "63248 instructions with skipped side effects remain",
+    "17381 reachable halt classifications remain"
+  ],
+  "runtime_opcode_fetch_decode_allowed": false,
+  "interpreter_fallback_allowed": false,
+  "audio_runtime_linked": false,
+  "audio_test_status": "deferred_until_native_apu_sample_output_exists"
+}

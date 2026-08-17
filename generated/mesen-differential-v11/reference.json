@@ -1,0 +1,30 @@
+{
+  "format": "mega-man-2-pinned-mesen-differential-reference-v1",
+  "version": "1.1.0",
+  "reference_project": "Mesen",
+  "reference_commit": "4b99a0f2a6d0771695abd99d3c0de19b49615420",
+  "reference_files": [
+    {"path": "Core/NES/APU/ApuFrameCounter.h", "sha256": "994dbe0a704496dda1e647af4033321c550e325a102e7044b294fba4514ec983"},
+    {"path": "Core/NES/APU/SquareChannel.h", "sha256": "8349ca8f27171c08ae73d562cc54efef7578a7e65bd30024a12f9d638a7ee1a3"},
+    {"path": "Core/NES/APU/TriangleChannel.h", "sha256": "321f191c39565b6ee3502f97fe91f420747482405b5c79790e25432a9e53a02c"},
+    {"path": "Core/NES/APU/NoiseChannel.h", "sha256": "0176671ec423f5fe75524da15c4ac3e0c9f15a85d0055ab91fd9c027766f6f46"},
+    {"path": "Core/NES/NesSoundMixer.cpp", "sha256": "652c83903496b2ef388f2c6a67b3d352215a5cd76682f12b779a7078d42702f0"},
+    {"path": "Core/NES/NesPpu.cpp", "sha256": "e7e24523aae142f3dfc6c097ef8e62ecd4109425b0c0bd1a500aa96effd2d0dd"},
+    {"path": "Core/NES/NesCpu.cpp", "sha256": "ee8e6a6e1c05d1f31a6b0e86d9cdc01a3ef14f680e0037c6b737175c0933f6a2"}
+  ],
+  "scope": [
+    "CPU maskable IRQ vector, stack and cycle entry",
+    "NTSC APU frame IRQ and delayed five-step application",
+    "pulse, triangle and noise timer transitions",
+    "nonlinear pulse and TND mixer vectors",
+    "visible-line secondary OAM, overflow and sprite-zero timing"
+  ],
+  "trace": {
+    "format": "mega-man-2-mesen-differential-trace-v1",
+    "cpu_irq": {"vector": "9000", "sp": 250, "stack_hi": "81", "stack_lo": "23", "stack_p": "20", "cycles": 14, "count": 1},
+    "apu_frame": {"irq_before_29828": 0, "irq_cycle": 29828, "status_at_irq": "40", "five_mode_after_3": 0, "delay_after_3": 1, "five_mode_after_4": 1, "cycle_after_apply": 0},
+    "apu_timers": {"pulse_ticks": 3, "pulse_position": 5, "triangle_ticks": 3, "triangle_position": 3, "triangle_output": 12, "noise_lfsr": "1000", "pulse_mix_30": 5168, "tnd_mix_dmc_127": 11484},
+    "ppu_sprites": {"overflow_dot": 130, "selected": 8, "sprite0_selected": 1, "hit_scanline": 1, "hit_dot": 1, "status": "60"}
+  }
+}
+

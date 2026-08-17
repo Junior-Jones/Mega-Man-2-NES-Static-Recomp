@@ -1,0 +1,43 @@
+{
+  "format": "mega-man-2-upstream-generation-audit-v1",
+  "version": "1.1.0",
+  "milestone": 3,
+  "tool": {
+    "repository": "mstan/nesrecomp",
+    "commit": "f85051decadd3f4fab8ab0d15b4ace1b3df19764",
+    "executable_sha256": "f8287544e29091cc87b30c96a618fb6bf8e12a2fefcec9f489c5db112e6849d2"
+  },
+  "rom_sha256": "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf",
+  "command": [
+    "NESRecomp.exe",
+    "Mega Man 2 (USA).nes",
+    "--output-prefix",
+    "mm2_upstream_v03"
+  ],
+  "metrics": {
+    "functions_discovered": 7157,
+    "functions_analyzed": 4363,
+    "reachable_instructions": 747805,
+    "false_positive_suspects": 836,
+    "reachable_brk": 57234,
+    "reachable_sized_skip": 95093,
+    "reachable_halt": 29583
+  },
+  "artifacts": {
+    "proposal_game_toml_sha256": "ea128a83587a6feb2c938c3c18dbb2172aa155dab7496cc81dd522b7cf03e924",
+    "coverage_sha256": "492f811ce967b52eb4a25ad45110d3caf5b3d2fd883738f90d3907b4135a84f3",
+    "generated_tree_sha256": "3c7156ae86fe35a39d9d0943c1464167761a1942996c4a6d314e82d6db6d0ea3"
+  },
+  "production_core_accepted": false,
+  "acceptance_gate_worked": true,
+  "rejection_reasons": [
+    "836 finder false-positive suspects",
+    "57234 reachable BRK classifications",
+    "95093 reachable instructions with skipped side effects",
+    "29583 reachable halt classifications",
+    "auto-generated game.toml is unreviewed"
+  ],
+  "audio_runtime_linked": false,
+  "audio_test_status": "deferred_until_native_apu_sample_output_exists"
+}
+

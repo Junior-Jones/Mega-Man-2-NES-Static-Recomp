@@ -1,0 +1,3 @@
+physical_bank_16k,cpu_pc,opcode,mnemonic,mode,base_address,classification,decision
+15,D097,8D,STA,ABS,FFF0,definite,terminate_path_at_milestone_02_mapper_boundary
+15,FFE1,EE,INC,ABS,FFE1,definite,terminate_path_at_milestone_02_mapper_boundary

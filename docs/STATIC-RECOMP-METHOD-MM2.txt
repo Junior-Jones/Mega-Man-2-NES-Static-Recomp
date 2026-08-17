@@ -1,0 +1,18 @@
+MEGA MAN 2 NES STATIC RECOMP METHOD
+Version 01 authority
+
+1. The executable program identity is physical PRG bank plus CPU address, never CPU address alone.
+2. The exact external ROM must pass SHA-256, mapper, size and vector checks before any generated evidence is accepted.
+3. The ROM remains outside source, evidence and executable archives.
+4. Start discovery from RESET, NMI and IRQ in a stated mapper state.
+5. Follow direct branch, JSR and JMP edges only when their target and bank context are known.
+6. Treat indirect jumps, pointer tables, stack dispatch, self-modifying code, executable RAM and unknown bank values as unresolved until a finite target/value proof exists.
+7. Model MMC1's serial port and CPU bus behavior. In particular, read-modify-write instructions can write twice and MMC1 ignores certain consecutive-cycle serial writes. Do not simplify this into an ordinary memory write.
+8. Translate each accepted 6502 instruction into fixed C at build time. Generated native execution may read game data but may not fetch an opcode to decide what instruction to execute.
+9. A dispatch miss, unsupported opcode, unknown mapper context or unknown executable RAM target must stop with a diagnostic. Never silently return or fall back to an interpreter.
+10. Keep generated code reproducible from exact source pins, exact ROM identity, exact annotations and exact tool arguments.
+11. Run native CPU/mapper/state comparisons against an independent oracle. MesenCE is the primary planned external oracle; a second independent core is preferred for disputed timing.
+12. Promote a milestone only after clean builds, machine-readable tests, deterministic repeat runs and archived receipts.
+13. Keep headed and headless tests equivalent. The headed test centre must execute the same scenario definitions and state checks as headless mode once gameplay exists.
+14. Keep accessibility as a release gate: standard controls, full keyboard operation, meaningful accessible names/status, no mouse-only workflow, correct focus, Escape/back behavior and tested screen-reader announcements.
+15. Keep snapshots hash-bound to ROM, generated core, mapper state, CPU, RAM, PPU, APU, input frame and screenshot. Reject mismatched or incomplete snapshots.

@@ -1,0 +1,106 @@
+CURRENT STATIC-RECOMP STATUS: 1.1.0
+
+COMPLETE:
+
+- opaque production core boundary with lifecycle, framebuffer, PCM, trap and
+  state-transfer APIs; writable layout access is limited to explicitly listed
+  certification/state-search tools through the internal header;
+- unified core-owned frame execution with copied indexed/BGRA output and a
+  bounded consumable PCM queue; the Windows runtime no longer runs its own
+  instruction-until-frame loop or follows the diagnostic PCM history ring;
+- core-owned, explicitly versioned snapshot files with exact-ROM/generated-core
+  binding, SHA-256 payload validation, strict EOF/state checks and atomic file
+  replacement; transient queued host audio is deliberately excluded;
+- filtered current-runtime hooks for before/after-instruction, CPU-bus access,
+  completed-frame and missing-identity frontier events, with deterministic
+  instruction-boundary stop/resume behavior and no persisted host pointers;
+- one production frame-driving path shared by the Windows launcher and ordinary
+  headless routes; route evidence now uses opaque cores, copied outputs,
+  read-only observations and hooks, while writable internal access is limited
+  to named certification and Metal Man state-search executables;
+- separate internal CPU, NES bus, PPU, APU and scheduler translation units;
+  the direct-core coordinator now owns only lifecycle, public API, hooks, state
+  transfer, frame execution and generated-case dispatch, with exact route
+  hashes preserved across the extraction;
+- six generated physical-bank CPU translation units covering all 20,149
+  identities behind a small generated bank dispatcher, with individual source
+  hashes, an ordered tree hash and byte-identical clean regeneration;
+- generated RTS/RTI stack pulls are explicitly sequenced status/low/high so
+  compiler evaluation order cannot swap emulated return-address bytes;
+- pulse sweep target/divider/reload behavior and a functional NTSC DMC path,
+  including fixed-bank fetches, address wrapping, buffering, delta output,
+  looping, IRQ/status latches and deterministic four-cycle CPU stalls;
+- a ROM-free sweep/DMC regression plus an exact-ROM byte-$85 output test; the
+  previously locked Mega Man 2 waveform and route hashes remain unchanged;
+- complete NTSC four/five-step APU frame sequencing, including the three-cycle
+  four-step IRQ window, immediate IRQ inhibit/clear behavior and parity-based
+  three/four-cycle delayed $4017 application;
+- maskable CPU IRQ entry for frame-counter and DMC sources, with NMI priority,
+  I-flag masking, B-clear stack status, mapped vector reads and seven scheduled
+  CPU cycles; structural tests cover the frame/status and stack/vector paths;
+- 20,149 ahead-of-time physical-bank/PC native instruction identities;
+- no runtime opcode fetch/decode, interpreter, JIT, emulator process, or fallback;
+- explicit MMC1, PPU, controller, APU, framebuffer and PCM support state;
+- NTSC 60.098810 Hz gameplay and 44,100 Hz audio cadence locks;
+- CPU-clocked pulse, triangle and noise timer sequencers, hardware duty/wave/LFSR
+  patterns, nonlinear NES pulse/TND mixing and cycle-interval 44.1 kHz averaging;
+- the cycle resampler prevents long instruction/DMA advances from emitting a
+  repeated final state; manual playback passed after the crackling correction;
+- short PCM identity AFF34F312F210308 and controlled Air Man identity
+  CD29F298AE150705 enforced in headless and headed checks;
+- dot-timed secondary OAM clear/evaluation, eight-sprite selection, overflow
+  assertion and sprite-zero hit behavior, with a ROM-free scanline/dot test;
+- a differential trace pinned to an identified Mesen commit and source hashes,
+  covering CPU IRQ entry, APU frame/timer/mixer behavior and PPU sprites;
+- unchanged native SDL3 queue and presentation-filter path;
+- multipart Metal Man test now shows explicit part-complete and part-loaded
+  transitions, reloads snapshots without reopening the audio device, and pauses
+  the device before the final result hold so the queue cannot drain/crackle;
+- four headed Metal Man screenshots and four state files recorded;
+- headed results return with focus in the Results text box;
+- full screen is a checked toolbar option mirrored by the Tools menu;
+- Escape switches gameplay to the Launcher and pauses core scheduling and SDL3
+  audio; Play or Escape resumes the same core and returns to gameplay;
+- one Run button replaces launcher Load ROM plus Start selected ROM; Run opens
+  Browse when no validated path is known, while Browse only selects/validates;
+- Screenshot is available from the File menu and F8 while a game exists;
+- controller input uses the shared SDL3 gamepad adapter and bundled community
+  mapping database, with hot-plug reconnection, analog deadzone hysteresis and
+  Keyboard, Gamepad, or combined input-source selection;
+- the Metal Man planner uses 25-frame snapshots and 50-frame look-ahead to
+  reject locally fast routes that become unrecoverable over spikes;
+- the route advanced from the old screen-4 frontier to screen 10 at frame 5450
+  with 16 HP and three lives; headed mode records 11 route screenshots/states;
+- expanded static-recomp checks cover native audio, headed tests, snapshots,
+  keyboard/gamepad settings, launcher/game switching and fullscreen behavior.
+- a whole-ROM certification ledger now separately locks 44,370 candidate code
+  bytes, 217,774 unclassified bytes, per-bank identity counts, and false
+  production/whole-ROM completion claims;
+- the Metal agent is explicitly controller-only: it reads live state for
+  scoring but performs no RAM patch.
+
+STATIC-RECOMP CONFIRMATION:
+
+- generated AOT native instruction bodies: PASS
+- runtime opcode decoder/interpreter/JIT: ABSENT
+- external emulator dependency or launch: ABSENT
+- exact ROM role limited to audit and immutable program/data bytes: PASS
+- missing bank/PC identity policy: HARD TRAP
+- native framebuffer/SDL3/input/snapshot presentation: PASS
+- mapper/PPU/APU accuracy: PARTIAL and separately gated
+
+OPEN / NOT CLAIMED:
+
+- exact DMC DMA startup/disable timing, OAM-DMC collisions, duplication glitches
+  and transistor-level NES audio equivalence;
+- exact bandlimited presentation equivalence with Mesen's blip-buffer path;
+- Metal Man progress beyond the current screen-10 frontier;
+- Metal Man boss door, boss fight and weapon award;
+- remaining bosses, death/restart, password, Wily routes and completion;
+- evidence-backed classification of the remaining 217,774 PRG bytes.
+
+TRUTHFUL LIMIT:
+
+This is a genuine static recomp: game instruction identities are translated to
+compiled native C cases ahead of time. It is not an emulator and has no runtime
+6502 opcode decoder. Hardware accuracy and route coverage remain development.

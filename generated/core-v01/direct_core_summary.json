@@ -1,0 +1,34 @@
+{
+  "format": "mega-man-2-direct-core-v2",
+  "version": "1.1.0",
+  "milestone": 7,
+  "architecture_revision": 2,
+  "source_program_map_sha256": "645754d31bcd57578134a7eaa3bf18d71f0a8276005862be39192b4376c30e51",
+  "opcode_table_sha256": "1e3a3f9028a70e78cec2d21f8d77e9d9b88a6a54b1b8b742985bad8a1d372b09",
+  "generated_tree_sha256": "e31a40d44bd2c7da0c3311037acbcab9792eaf969d35ece75f0936af7f7da415",
+  "generated_sources": {
+    "mm2_direct_core_bank_09.c": "c31371ee396f9b39b68264f6d2caaab76ac4136f724506f2297a58da2bd6f8c0",
+    "mm2_direct_core_bank_0b.c": "5c343e67e91e431cd5c932c181b7164113e733455d6800b13bd0e4539ff411e3",
+    "mm2_direct_core_bank_0c.c": "4690f9f5b40302681fca5dfffcb26ad855920b634f6e51d6aa01bd29f4e3dd06",
+    "mm2_direct_core_bank_0d.c": "e3b0e2b2c4a84cd3c438e9cadbfc26d29418eab60c15bb1b2f4811977047a201",
+    "mm2_direct_core_bank_0e.c": "81c7466c79651602be8a176e8354f8a84399a97224cc80774169cbd71f57a0b7",
+    "mm2_direct_core_bank_0f.c": "4e43f9407ff99a0d1fab490241958234b750806ed1186bc66927d135093788de",
+    "mm2_direct_core_dispatch.c": "417e2dd84438294d0372ea9482ef1286f4506a1e9bc3179e54a8275db611b429"
+  },
+  "shard_count": 6,
+  "dispatch_bank_count": 6,
+  "bank_case_counts": {
+    "09": 122,
+    "0B": 4170,
+    "0C": 1249,
+    "0D": 3904,
+    "0E": 6027,
+    "0F": 4677
+  },
+  "instruction_identities": 20149,
+  "unique_bank_pc_identities": 20149,
+  "runtime_opcode_fetch_decode_count": 0,
+  "interpreter_fallback_count": 0,
+  "missing_identity_policy": "hard_trap",
+  "direct_core_link_gate": "accepted"
+}
