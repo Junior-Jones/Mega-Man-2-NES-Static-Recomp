@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
         return 7;
     }
     fprintf(result,
-      "{\n  \"format\": \"mega-man-2-first-frame-route-v1\",\n  \"version\": \"1.1.0\",\n"
+      "{\n  \"format\": \"mega-man-2-first-frame-route-v1\",\n  \"version\": \"1.1.1\",\n"
       "  \"ok\": %s,\n  \"instructions\": %llu,\n  \"cpu_cycles\": %llu,\n  \"ppu_cycles\": %llu,\n"
       "  \"ppu_frames\": %llu,\n  \"nmi_count\": %llu,\n  \"framebuffer_hash_fnv1a64\": \"%016llX\",\n"
       "  \"apu_write_events\": %llu,\n  \"apu_write_overflow\": %llu,\n  \"trap\": \"%s\",\n"

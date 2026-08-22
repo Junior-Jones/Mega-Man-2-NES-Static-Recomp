@@ -88,7 +88,7 @@ def main() -> int:
         reasons.append(f"candidate map has {mapped['conflicting_code_bytes']} conflicting bytes and {mapped['unresolved_boundaries']} unresolved boundaries")
     improvements = {key: V03_METRICS[key] - metrics[key] for key in V03_METRICS}
     receipt = {
-        "format": "mega-man-2-reviewed-generation-audit-v06", "version": "1.1.0", "milestone": 6,
+        "format": "mega-man-2-reviewed-generation-audit-v06", "version": "1.1.1", "milestone": 6,
         "tool": {"repository": "mstan/nesrecomp", "commit": EXPECTED_TOOL_COMMIT, "executable_sha256": sha(tool)},
         "rom_sha256": sha(rom), "reviewed_config_sha256": sha(config), "program_map_sha256": sha(program_map),
         "command": [tool.name, rom.name, "--game", config.name], "metrics": metrics,

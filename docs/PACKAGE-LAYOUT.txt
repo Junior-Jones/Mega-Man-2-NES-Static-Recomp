@@ -1,4 +1,4 @@
-MEGA MAN 2 STATIC RECOMP 1.1.0 PACKAGE LAYOUT
+MEGA MAN 2 STATIC RECOMP 1.1.1 PACKAGE LAYOUT
 
 Portable Windows release:
   Launcher.exe
@@ -13,7 +13,7 @@ the application first writes a corresponding file.
 
 Source release:
   Mega-Man-2-NES-Static-Recomp-Source/
-  Mega-Man-2-NES-Static-Recomp-1.1.0-Windows-Source.zip
+  Mega-Man-2-NES-Static-Recomp-1.1.1-Windows-Source.zip
 
 The source archive contains source, generated receipts and ledgers, tests,
 scripts, documentation and the SHA-256 inventory. It excludes ROMs, compiled

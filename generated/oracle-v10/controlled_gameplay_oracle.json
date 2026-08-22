@@ -1,6 +1,6 @@
 {
   "format": "mega-man-2-controlled-gameplay-oracle-v1",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "rom_sha256": "49136B412FF61BEAC6E40D0BBCD8691A39A50CD2744FDCDDE3401EED53D71EDF",
   "ppu_frames": 4000,
   "framebuffer_hash_fnv1a64": "5D9DB3D43ECC059A",

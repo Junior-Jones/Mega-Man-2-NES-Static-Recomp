@@ -1,6 +1,6 @@
 {
   "format": "mega-man-2-reviewed-generation-audit-v06",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "milestone": 6,
   "tool": {
     "repository": "mstan/nesrecomp",
@@ -9,7 +9,7 @@
   },
   "rom_sha256": "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf",
   "reviewed_config_sha256": "2fc2f3ab1f56ddf11e56f73749ec88a804e1a0225927033a0daa5e920d53bcd4",
-  "program_map_sha256": "748839837b0d15ca62c2a0eab5fa8916858f411586b158a90d2400a9a7e62121",
+  "program_map_sha256": "81bb704a0564c9c20eddb2297efe88ce147b2f47b4030cd492d962691ea81a6c",
   "command": [
     "NESRecomp.exe",
     "Mega Man 2 (USA).nes",

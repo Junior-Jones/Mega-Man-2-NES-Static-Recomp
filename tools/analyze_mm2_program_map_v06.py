@@ -560,7 +560,7 @@ def main() -> int:
         conflict_bytes = sum(int(row["length"]) for row in ledger if row["classification"] == "conflicting_code")
         resolved_indirects = sum(row["decision"].startswith("resolved") for row in indirects)
         summary = {
-            "format": "mega-man-2-program-map-v06", "version": "1.1.0", "milestone": 6,
+            "format": "mega-man-2-program-map-v06", "version": "1.1.1", "milestone": 6,
             "rom": rom, "reviewed_config_sha256": sha256(args.config),
             "scope": "exact-ROM physical-bank ledger from vectors, direct flow, constant MMC1 transactions, and ROM-resident indirect pointers",
             "instruction_identities": len(instructions), "candidate_code_bytes": candidate_bytes,

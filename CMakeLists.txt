@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(MegaMan2NESStaticRecomp110 C CXX)
+project(MegaMan2NESStaticRecomp111 C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -111,6 +111,7 @@ endforeach()
 
 if(WIN32)
     add_executable(mega-man-2-launcher WIN32
+        src/gui/launcher_version.rc
         src/gui/mm2_windows_launcher.cpp
         src/gui/mm2_windows_live.cpp
         src/gui/mm2_audio_output_sdl3.cpp

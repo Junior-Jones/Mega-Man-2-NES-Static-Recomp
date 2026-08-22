@@ -1,6 +1,6 @@
 {
   "format": "mega-man-2-visual-audio-state-oracle-matrix-v1",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "rom_sha256": "49136B412FF61BEAC6E40D0BBCD8691A39A50CD2744FDCDDE3401EED53D71EDF",
   "route": "title-to-air-man-controlled",
   "checkpoints": [

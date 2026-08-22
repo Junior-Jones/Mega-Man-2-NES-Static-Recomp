@@ -1,6 +1,6 @@
 {
   "format": "mega-man-2-pinned-mesen-differential-reference-v1",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "reference_project": "Mesen",
   "reference_commit": "4b99a0f2a6d0771695abd99d3c0de19b49615420",
   "reference_files": [

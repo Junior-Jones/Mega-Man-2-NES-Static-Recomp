@@ -1,6 +1,6 @@
 {
   "format": "mega-man-2-eight-stage-visual-oracle-v1",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "capture_frame": 2000,
   "stages": {
     "bubble-man": {"framebuffer_hash_fnv1a64": "E53FEBDFEEC3A219", "bmp_sha256": "E1D9218351CE4A5B908F6382911232DF3BBB43CBE0490D46E8A87263C76FE331"},

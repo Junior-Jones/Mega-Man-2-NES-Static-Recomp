@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     result = fopen(result_path, "wb");
     if (!result) { mm2_direct_core_destroy(core); mm2_rom_free(&rom); return 5; }
     fputs("{\n  \"format\": \"mega-man-2-eight-stage-load-matrix-v1\",\n"
-          "  \"version\": \"1.1.0\",\n  \"stages\": [\n", result);
+          "  \"version\": \"1.1.1\",\n  \"stages\": [\n", result);
     for (stage_index = 0u; stage_index < 8u; ++stage_index) {
         uint64_t capture_hash = 0u, capture_sprites = 0u;
         int wrote = 0, ok;

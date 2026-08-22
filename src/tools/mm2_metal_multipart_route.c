@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
     result = fopen(result_path, "wb");
     if (!result) return 6;
     fputs("{\n  \"format\":\"mega-man-2-metal-man-multipart-v1\",\n"
-          "  \"version\":\"1.1.0\",\n  \"parts\":[\n", result);
+          "  \"version\":\"1.1.1\",\n  \"parts\":[\n", result);
     for (part = 0u; part < part_limit && instructions < limit; ++part) {
         uint64_t start_frame = core.ppu_frames;
         uint64_t target = start_frame + part_length;

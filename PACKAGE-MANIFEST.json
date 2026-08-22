@@ -1,7 +1,7 @@
 {
   "format": "mega-man-2-static-recomp-source-package-v1",
-  "version": "1.1.0",
-  "date": "2026-08-17",
+  "version": "1.1.1",
+  "date": "2026-08-22",
   "rom_included": false,
   "playable_native_runtime": true,
   "native_cpu_core_linked": true,

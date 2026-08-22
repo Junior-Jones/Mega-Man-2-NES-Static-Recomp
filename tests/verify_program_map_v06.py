@@ -2,14 +2,14 @@
 from __future__ import annotations
 import csv, hashlib, json, pathlib, sys
 
-EXPECTED_SHA = "748839837b0d15ca62c2a0eab5fa8916858f411586b158a90d2400a9a7e62121"
+EXPECTED_SHA = "81bb704a0564c9c20eddb2297efe88ce147b2f47b4030cd492d962691ea81a6c"
 
 def main() -> int:
     if len(sys.argv) != 2: print("usage: verify_program_map_v06.py SOURCE", file=sys.stderr); return 2
     root = pathlib.Path(sys.argv[1]).resolve() / "generated" / "program-map-v06"
     raw = (root / "program_map_summary.json").read_bytes(); data = json.loads(raw)
     assert hashlib.sha256(raw).hexdigest() == EXPECTED_SHA
-    assert data["format"] == "mega-man-2-program-map-v06" and data["version"] == "1.1.0" and data["milestone"] == 6
+    assert data["format"] == "mega-man-2-program-map-v06" and data["version"] == "1.1.1" and data["milestone"] == 6
     assert data["rom"]["sha256"] == "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf"
     assert data["reviewed_config_sha256"] == "2fc2f3ab1f56ddf11e56f73749ec88a804e1a0225927033a0daa5e920d53bcd4"
     assert data["instruction_identities"] == 20149 and data["candidate_code_bytes"] == 44370

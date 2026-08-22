@@ -1,10 +1,10 @@
-ACCESSIBILITY AND FRONTEND - 1.1.0
+ACCESSIBILITY AND FRONTEND - 1.1.1
 
 Launcher.exe uses standard Win32 menus, buttons, check boxes, combo boxes, and
 dialogs so keyboard navigation and Windows UI Automation expose names, roles,
 states, focus, and disabled controls.
 
-The launcher and game are one process and one top-level window. Escape switches
+The launcher and game run in one process and share the main view. Escape switches
 from gameplay to the launcher, pauses the core and SDL3 audio, and focuses Play.
 Play or Escape resumes the same core and returns to the game view.
 
@@ -23,7 +23,7 @@ gamecontrollerdb.txt, reconnects hot-plugged devices, applies analog hysteresis,
 and maps D-pad/left stick, west/south face buttons, Start and Back to NES input.
 
 The visual frontend was reviewed at 100 percent display scaling. The launcher,
-File and Settings menus, frontend settings, controller bindings, controls guide,
-About dialog, game view, and paused launcher view showed no clipped or overlapping
-controls after the 1.1.0 layout corrections. The game view preserves the enabled
+File, Settings, and Help menus, settings, controller bindings, accessible help text,
+About information, game view, and paused launcher view showed no clipped or overlapping
+controls after the 1.1.1 layout corrections. The game view preserves the enabled
 4:3 correction with black pillarboxing rather than stretching.

@@ -1,4 +1,4 @@
-Mega Man 2 (NES) Static Recomp - 1.1.0
+Mega Man 2 (NES) Static Recomp - 1.1.1
 
 Launcher.exe is a portable Windows 10/11 frontend for the Mega Man 2 static
 recompilation core. The original game ROM is not included.
@@ -16,7 +16,7 @@ Player 1 controls:
   A           Select
 
 Escape switches between the game and Launcher. F1 shows the complete controls
-guide. F2/F3 save and load a snapshot, F4 opens frontend settings, F5 opens
+guide. F2/F3 save and load a snapshot, F4 opens settings, F5 opens
 controller bindings, F6 opens audio settings, F7 runs the selected ROM, and F8
 captures the game window.
 

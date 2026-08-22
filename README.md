@@ -1,4 +1,4 @@
-# Mega Man 2 (NES) Static Recomp 1.1.0
+# Mega Man 2 (NES) Static Recomp 1.1.1
 
 Native Windows static recompilation frontend and core for Mega Man 2 on the
 Nintendo Entertainment System.
@@ -11,7 +11,7 @@ The original game ROM is not included. Use a legally obtained Mega Man 2
 
 - `Launcher.exe` is portable on Windows 10 and Windows 11.
 - Escape switches between the Launcher and game window.
-- F4 opens frontend settings, F5 opens controller bindings, and F6 opens audio
+- F4 opens settings, F5 opens controller bindings, and F6 opens audio
   settings.
 - SDL 3.4.10 video, audio, and gamepad support is statically linked.
 - No third-party DLL is required beside `Launcher.exe`.

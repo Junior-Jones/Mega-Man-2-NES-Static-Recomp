@@ -54,7 +54,7 @@ def main()->int:
     if halt: reasons.append(f"{halt} reachable halt classifications")
     reasons.append("auto-generated game.toml is unreviewed")
     receipt={
-      "format":"mega-man-2-upstream-generation-audit-v1","version":"1.1.0","milestone":3,
+      "format":"mega-man-2-upstream-generation-audit-v1","version":"1.1.1","milestone":3,
       "tool":{"repository":"mstan/nesrecomp","commit":EXPECTED_TOOL_COMMIT,"executable_sha256":sha(tool)},
       "rom_sha256":sha(rom),"command":[tool.name,rom.name,"--output-prefix","mm2_upstream_v03"],
       "metrics":{"functions_discovered":discovered,"functions_analyzed":analyzed,"reachable_instructions":reachable,

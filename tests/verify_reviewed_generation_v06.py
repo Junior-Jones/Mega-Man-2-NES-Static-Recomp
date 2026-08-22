@@ -2,7 +2,7 @@
 from __future__ import annotations
 import hashlib, json, pathlib, sys
 
-EXPECTED_SHA = "09277fbc51d429367ff23e397705d703a70715777ae55103c7020d169a0d45a6"
+EXPECTED_SHA = "5332afd8e9cb6de26dce92afa6bf7f4a32e70af35a7a3f0fc6f0063d7eb15788"
 EXPECTED_METRICS = {"functions_discovered":4203,"functions_analyzed":4199,"reachable_instructions":562696,"false_positive_suspects":643,"reachable_brk":42045,"reachable_sized_skip":63248,"reachable_halt":17381}
 
 def main() -> int:
@@ -10,9 +10,9 @@ def main() -> int:
     path = pathlib.Path(sys.argv[1]).resolve() / "generated" / "reviewed-generation-v06" / "reviewed_generation_summary.json"
     raw = path.read_bytes(); data = json.loads(raw)
     assert hashlib.sha256(raw).hexdigest() == EXPECTED_SHA
-    assert data["format"] == "mega-man-2-reviewed-generation-audit-v06" and data["version"] == "1.1.0" and data["milestone"] == 6
+    assert data["format"] == "mega-man-2-reviewed-generation-audit-v06" and data["version"] == "1.1.1" and data["milestone"] == 6
     assert data["reviewed_config_sha256"] == "2fc2f3ab1f56ddf11e56f73749ec88a804e1a0225927033a0daa5e920d53bcd4"
-    assert data["program_map_sha256"] == "748839837b0d15ca62c2a0eab5fa8916858f411586b158a90d2400a9a7e62121"
+    assert data["program_map_sha256"] == "81bb704a0564c9c20eddb2297efe88ce147b2f47b4030cd492d962691ea81a6c"
     assert data["metrics"] == EXPECTED_METRICS
     assert all(value > 0 for value in data["improvement_from_v03"].values())
     assert data["reviewed_configuration_used"] is True and data["deterministic_regeneration_required"] is True

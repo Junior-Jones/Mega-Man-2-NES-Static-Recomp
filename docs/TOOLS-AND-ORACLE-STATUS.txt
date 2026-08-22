@@ -1,4 +1,4 @@
-TOOLS AND ORACLE STATUS - 1.1.0
+TOOLS AND ORACLE STATUS - 1.1.1
 
 The exact ROM, NESRecomp executable and local Mesen checkout are development
 inputs only and are not included in either release package.

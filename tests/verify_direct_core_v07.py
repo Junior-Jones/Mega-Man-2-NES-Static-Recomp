@@ -27,7 +27,7 @@ def main() -> int:
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     required = {
         "format": "mega-man-2-direct-core-v2",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "milestone": 7,
         "architecture_revision": 2,
         "instruction_identities": 20149,

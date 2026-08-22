@@ -1,4 +1,4 @@
-# Mega Man 2 NES Static Recomp - 1.1.0
+# Mega Man 2 NES Static Recomp - 1.1.1
 
 This tree contains the native static-recompilation core, generated instruction
 identities, reproducibility evidence, tests, and the single-process Windows
@@ -17,7 +17,7 @@ Use a legally obtained Mega Man 2 (USA) `.nes` ROM matching
 - Controller Bindings offers Keyboard, Gamepad, and Keyboard + gamepad input,
   an adjustable stick deadzone, hot-plug reconnection, and the bundled SDL
   community controller database.
-- F4 opens frontend settings, F5 opens controller bindings, and F6 opens the
+- F4 opens settings, F5 opens controller bindings, and F6 opens the
   separate audio settings window. F1 through F8 are reserved frontend keys.
 - SDL 3.4.10 provides statically linked video, WASAPI audio, and gamepad support.
 - Snapshot and screenshot folders are created only when a file is first written.

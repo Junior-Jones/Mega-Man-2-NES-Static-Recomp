@@ -1,4 +1,4 @@
-AUDIO TEST STATUS - 1.1.0
+AUDIO TEST STATUS - 1.1.1
 
 The core produces 44,100 Hz PCM through CPU-clocked pulse, triangle, noise and
 DMC channels, the NES nonlinear pulse/TND mixer, and cycle-interval averaging.

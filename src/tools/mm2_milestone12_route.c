@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     result = fopen(result_path, "wb");
     if (!result) { mm2_direct_core_destroy(core); mm2_rom_free(&rom); return 7; }
     fprintf(result,
-      "{\n  \"format\": \"mega-man-2-controlled-gameplay-progression-route-v3\",\n  \"version\": \"1.1.0\",\n"
+      "{\n  \"format\": \"mega-man-2-controlled-gameplay-progression-route-v3\",\n  \"version\": \"1.1.1\",\n"
       "  \"ok\": %s,\n  \"instructions\": %llu,\n  \"cpu_cycles\": %llu,\n  \"ppu_cycles\": %llu,\n"
       "  \"ppu_frames\": %llu,\n  \"nmi_count\": %llu,\n  \"framebuffer_hash_fnv1a64\": \"%016llX\",\n"
       "  \"gameplay_frame_hash_fnv1a64\": \"%016llX\",\n  \"gameplay_sprite_pixels\": %llu,\n"
