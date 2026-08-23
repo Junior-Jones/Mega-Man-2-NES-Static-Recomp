@@ -7,6 +7,42 @@ The original game ROM is not included. Use a legally obtained Mega Man 2
 (USA) `.nes` ROM matching `ROM-REQUIREMENTS.txt` and place it in the portable
 `Rom` folder.
 
+## What "fully static recompilation" means
+
+Mega Man 2 is a fully static, ahead-of-time recompilation. Its executable NES
+6502 game instructions were analysed and translated into native C code before
+the application was built. The production launcher executes the generated game
+code directly.
+
+At runtime, the application does not use a general-purpose 6502 interpreter,
+runtime opcode decoder, dynamic recompiler, JIT compiler, learning system or
+emulator fallback. The static core contains 20,149 accepted bank-and-address
+identities divided into deterministic generated translation units. Missing
+banks or addresses stop through a fail-closed trap instead of falling back to
+interpreted execution.
+
+The complete runtime includes:
+
+- Generated native execution of the original 6502 game code.
+- Native MMC1 cartridge-bank and memory mapping.
+- NES CPU bus and controller handling.
+- Native PPU memory, register, background and sprite rendering.
+- Dot-timed sprite evaluation and sprite-zero behaviour.
+- Native NES APU pulse, triangle, noise and DMC audio generation.
+- CPU-to-PPU/APU scheduling, NMI, IRQ and DMA handling.
+- Core-owned framebuffer, PCM output and deterministic snapshots.
+- Exact-ROM and generated-core identity validation.
+- A portable, accessible Windows launcher with statically linked SDL video,
+  audio and gamepad support.
+
+"Fully static" does not mean that gameplay, graphics or sound are prerecorded.
+Every frame is produced live from player input and current machine state. It
+means that the game's executable instructions are already compiled into the
+application and no interpretive or fallback game-code engine is used.
+
+Development and certification tools may compare results against pinned
+reference traces. Those tools are not part of the production runtime.
+
 ## Frontend
 
 - `Launcher.exe` is portable on Windows 10 and Windows 11.
