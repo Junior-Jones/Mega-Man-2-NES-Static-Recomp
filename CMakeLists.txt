@@ -139,6 +139,12 @@ if(WIN32)
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${CMAKE_SOURCE_DIR}/third_party/gamecontrollerdb.txt"
             "$<TARGET_FILE_DIR:mega-man-2-launcher>/gamecontrollerdb.txt"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/third_party/SDL_GameControllerDB-LICENSE.txt"
+            "$<TARGET_FILE_DIR:mega-man-2-launcher>/SDL_GameControllerDB-LICENSE.txt"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
+            "$<TARGET_FILE_DIR:mega-man-2-launcher>/THIRD-PARTY-NOTICES.txt"
         COMMAND "${CMAKE_COMMAND}" -E make_directory
             "$<TARGET_FILE_DIR:mega-man-2-launcher>/Rom"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
