@@ -1,4 +1,4 @@
-RUNTIME AND HEADED TEST LIFECYCLE - 1.1.1
+RUNTIME AND HEADED TEST LIFECYCLE - 1.2.0
 
 Launcher.exe owns one process containing the Windows frontend and the static
 core. Run validates and loads the selected ROM, then starts the game window.

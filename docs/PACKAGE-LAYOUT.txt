@@ -1,20 +1,30 @@
-MEGA MAN 2 STATIC RECOMP 1.1.1 PACKAGE LAYOUT
+MEGA MAN 2 STATIC RECOMP 1.2.0 PACKAGE LAYOUT
 
 Portable Windows release:
   Launcher.exe
   README.txt
   VERSION.txt
+  Wide Screen (v1).txt
   SDL-LICENSE.txt
+  SDL_GameControllerDB-LICENSE.txt
+  THIRD-PARTY-NOTICES.txt
   gamecontrollerdb.txt
   Rom/Readme.txt
+  Snapshots/Readme.txt
+  Screenshots/Readme.txt
 
-The release contains no ROM. Saves, Screenshots and Logs are created only when
-the application first writes a corresponding file.
+The release contains no ROM, settings file, saved state, screenshot, log or test
+artifact. User-created snapshots and screenshots remain in their portable
+folders after first use.
 
 Source release:
   Mega-Man-2-NES-Static-Recomp-Source/
-  Mega-Man-2-NES-Static-Recomp-1.1.1-Windows-Source.zip
+  Mega-Man-2-NES-Static-Recomp-1.2.0-Windows-Source.zip
 
 The source archive contains source, generated receipts and ledgers, tests,
 scripts, documentation and the SHA-256 inventory. It excludes ROMs, compiled
 binaries, media, caches, external build trees and nested archives.
+
+Reproducible packaging tools:
+  tools/create_windows_release.py
+  tools/create_source_package.py

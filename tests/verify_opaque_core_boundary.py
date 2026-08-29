@@ -19,7 +19,8 @@ for coupling in ("s->core.", "mm2_direct_core_step(&s->core)",
                  "mm2_direct_core_reset(&s->core", "sizeof(MM2DirectCore)"):
     assert coupling not in live, coupling
 for api in ("mm2_direct_core_create", "mm2_direct_core_destroy",
-            "mm2_direct_core_frame_count", "mm2_direct_core_frame_copy_indexed",
+            "mm2_direct_core_frame_count",
+            "mm2_direct_core_presentation_copy_indexed",
             "mm2_direct_core_audio_read", "mm2_direct_core_snapshot_save",
             "mm2_direct_core_snapshot_load"):
     assert api in public and api in live, api

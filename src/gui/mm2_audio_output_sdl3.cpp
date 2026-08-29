@@ -4,7 +4,31 @@
 #include <cstring>
 #include <iterator>
 
-namespace { constexpr int kSampleRate=44100; }
+namespace {
+constexpr int kSampleRate=44100;
+constexpr uint32_t kDriftToleranceMs=3u;
+constexpr float kMaximumRateAdjustment=0.0025f;
+
+uint32_t queued_native_frames(MM2AudioOutput *o){
+    if(!o||!o->stream)return 0u;
+    int bytes=SDL_GetAudioStreamQueued(o->stream);
+    return bytes>0?(uint32_t)bytes/sizeof(int16_t):0u;
+}
+
+void update_drift_correction(MM2AudioOutput *o){
+    if(!o||!o->stream||o->paused||o->priming)return;
+    uint32_t tolerance=(uint32_t)kSampleRate*kDriftToleranceMs/1000u;
+    float wanted=1.0f;
+    if(o->queue_depth_frames>o->target_frames+tolerance)
+        wanted=1.0f+kMaximumRateAdjustment;
+    else if(o->queue_depth_frames+tolerance<o->target_frames)
+        wanted=1.0f-kMaximumRateAdjustment;
+    o->playback_ratio+=(wanted-o->playback_ratio)*0.05f;
+    o->playback_ratio=std::clamp(o->playback_ratio,
+        1.0f-kMaximumRateAdjustment,1.0f+kMaximumRateAdjustment);
+    (void)SDL_SetAudioStreamFrequencyRatio(o->stream,o->playback_ratio);
+}
+}
 
 static void set_error(wchar_t *error,size_t cap,const wchar_t *prefix){
     wchar_t detail[256]={};if(!error||!cap)return;
@@ -22,16 +46,16 @@ int mm2_audio_output_open(MM2AudioOutput *o,int volume,int latency,wchar_t *erro
     SDL_SetAudioStreamGain(o->stream,(float)volume/100.0f);o->target_frames=(uint32_t)((uint64_t)kSampleRate*latency/1000u);
     o->playback_ratio=1.0f;o->paused=1;o->priming=1;return 1;
 }
-void mm2_audio_output_flush(MM2AudioOutput *o){if(o&&o->stream){SDL_ClearAudioStream(o->stream);o->priming=1;}}
+void mm2_audio_output_flush(MM2AudioOutput *o){if(o&&o->stream){SDL_ClearAudioStream(o->stream);o->priming=1;o->starved_last_push=0;o->queue_depth_frames=0u;}}
 void mm2_audio_output_close(MM2AudioOutput *o){if(!o)return;if(o->stream)SDL_DestroyAudioStream(o->stream);if(o->initialized)SDL_QuitSubSystem(SDL_INIT_AUDIO);std::memset(o,0,sizeof(*o));}
+void mm2_audio_output_set_volume(MM2AudioOutput *o,int volume){if(o&&o->stream){volume=std::clamp(volume,0,100);(void)SDL_SetAudioStreamGain(o->stream,(float)volume/100.0f);}}
 void mm2_audio_output_pause(MM2AudioOutput *o){if(!o||!o->stream||o->paused)return;SDL_PauseAudioStreamDevice(o->stream);mm2_audio_output_flush(o);o->paused=1;}
 void mm2_audio_output_resume(MM2AudioOutput *o){if(!o||!o->stream||!o->paused)return;mm2_audio_output_flush(o);o->paused=0;}
 void mm2_audio_output_push(MM2AudioOutput *o,const int16_t *samples,size_t count){
     if(!o||!o->stream||!samples||!count)return;
-    SDL_PutAudioStreamData(o->stream,samples,(int)(count*sizeof(int16_t)));
-    int queued=SDL_GetAudioStreamQueued(o->stream);uint32_t frames=queued>0?(uint32_t)queued/sizeof(int16_t):0u;
-    if(o->priming&&!o->paused&&frames>=o->target_frames/2u){if(SDL_ResumeAudioStreamDevice(o->stream))o->priming=0;}
-    if(!o->priming&&!o->paused){uint32_t tolerance=kSampleRate*3u/1000u;float wanted=1.0f;
-        if(frames>o->target_frames+tolerance)wanted=1.0025f;else if(frames+tolerance<o->target_frames)wanted=0.9975f;
-        o->playback_ratio+=(wanted-o->playback_ratio)*0.05f;SDL_SetAudioStreamFrequencyRatio(o->stream,o->playback_ratio);}
+    if(SDL_PutAudioStreamData(o->stream,samples,(int)(count*sizeof(int16_t))))
+        o->queued_frames+=count;
+    o->queue_depth_frames=queued_native_frames(o);
+    if(o->priming&&!o->paused&&o->queue_depth_frames>=o->target_frames/2u){if(SDL_ResumeAudioStreamDevice(o->stream))o->priming=0;}
+    if(!o->priming&&!o->paused){int starved=o->queue_depth_frames==0u;if(starved&&!o->starved_last_push)o->underruns++;o->starved_last_push=starved;update_drift_correction(o);}
 }

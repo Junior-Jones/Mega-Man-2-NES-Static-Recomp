@@ -1,4 +1,4 @@
-# Mega Man 2 (NES) Static Recomp 1.1.1
+# Mega Man 2 (NES) Static Recomp 1.2.0
 
 Native Windows static recompilation frontend and core for Mega Man 2 on the
 Nintendo Entertainment System.
@@ -20,6 +20,13 @@ emulator fallback. The static core contains 20,149 accepted bank-and-address
 identities divided into deterministic generated translation units. Missing
 banks or addresses stop through a fail-closed trap instead of falling back to
 interpreted execution.
+
+Version 1.2.0 preserves all 20,149 identities while factoring their repeated
+implementations into 96 fixed compile-time helpers. The helper is selected by
+each explicit generated bank/PC case, never by decoding an opcode at runtime.
+The offline context-to-helper sidecar is not linked into the production core.
+See `docs/STATIC-CORE-COMPACTION-1.2.0.md` for measurements and equivalence
+evidence.
 
 The complete runtime includes:
 

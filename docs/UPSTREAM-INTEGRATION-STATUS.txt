@@ -1,10 +1,10 @@
-UPSTREAM INTEGRATION STATUS â€” 1.1.1
+UPSTREAM INTEGRATION RECORD - 1.2.0
 
 Pinned NESRecomp commit: f85051decadd3f4fab8ab0d15b4ace1b3df19764
 Pinned executable SHA-256: F8287544E29091CC87B30C96A618FB6BF8E12A2FEFCEC9F489C5DB112E6849D2
 Reviewed config SHA-256: 19C6CC0AFB416808AB58F8D825A3093DF06C5669044FC6D8368249AF430694D3
 
-V0.03 default proposal -> v0.04 reviewed configuration:
+Historical v0.03 default proposal -> v0.04 reviewed configuration:
 - discovered functions: 7,157 -> 4,203;
 - reachable classifications: 747,805 -> 562,696;
 - finder suspects: 836 -> 643;
@@ -12,5 +12,7 @@ V0.03 default proposal -> v0.04 reviewed configuration:
 - sized-skip side effects: 95,093 -> 63,248;
 - halt classifications: 29,583 -> 17,381.
 
-Every metric improved and the exact receipt regenerates byte-for-byte. None reached the required zero-harm threshold, so generated C remains experimental under Temp and is not linked or packaged as a production core.
-
+Every metric improved and the exact historical receipt regenerates byte-for-byte.
+That exploratory upstream output is retained only as provenance. Version 1.2.0
+links the separately reviewed generated direct core included in this source tree;
+no Temp workspace or experimental upstream output is packaged.

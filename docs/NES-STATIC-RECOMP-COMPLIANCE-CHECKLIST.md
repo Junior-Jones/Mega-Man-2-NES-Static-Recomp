@@ -4,7 +4,7 @@ This is the project definition of an NES static recomp. Architecture and
 accuracy are separate: partial device timing can exist in a genuine recomp, but
 runtime execution through an opcode interpreter, JIT, or fallback cannot.
 
-| Aspect | Required meaning | 1.1.1 status | Evidence |
+| Aspect | Required meaning | 1.2.0 status | Evidence |
 |---|---|---|---|
 | Translated game code | 6502 instruction identities become native C/C++ control flow ahead of time | PASS | Six generated physical-bank translation units contain 20,149 compiled PC cases and a generated bank dispatcher |
 | No runtime decoding | Runtime never fetches an opcode and chooses its implementation | PASS | Dispatch uses mapped physical bank plus PC; strict scan rejects decoder patterns |

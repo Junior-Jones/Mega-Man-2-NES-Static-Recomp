@@ -1,11 +1,12 @@
-MEGA MAN 2 STATIC RECOMP 1.1.1 TEST MATRIX
+MEGA MAN 2 STATIC RECOMP 1.2.0 TEST MATRIX
 
 ROM-free gates:
 1. Strict MSVC /W4 /WX build.
 2. MMC1, generated seed, direct-core and snapshot self-tests.
 3. Runtime-hook and shared headed/headless frame-path checks.
 4. APU timer/mixer/resampler/IRQ self-test.
-5. Dot-timed PPU sprite evaluation, overflow and sprite-zero self-test.
+5. Dot-timed PPU sprite evaluation, overflow, sprite-zero and completed-visible-
+   frame presentation-latch self-test.
 6. Pinned Mesen CPU/APU/PPU differential trace.
 7. Generated source, program-map and receipt integrity checks.
 8. Opaque-core, subsystem-boundary and strict-static source scans.
@@ -14,6 +15,8 @@ ROM-free gates:
 Exact-ROM gates:
 1. ROM identity and 100,000-instruction smoke.
 2. First-frame, title/input, controlled gameplay and screenshot routes.
+   Windows screenshot capture is also source-checked to use the exact submitted
+   display buffer, collision-safe names and checked file writes.
 3. Four-checkpoint graphics/audio/state oracle.
 4. All eight Robot Master stage load and visual oracles.
 5. Exact APU PCM identities.
@@ -23,6 +26,14 @@ Release gates:
 1. Portable Launcher.exe starts without third-party DLLs.
 2. Controller settings expose Keyboard, Gamepad and combined input, with the
    bundled mapping database available beside Launcher.exe and no-device fallback.
-3. Release contains no ROM and no pre-created empty output folders.
-4. Source archive contains no binaries, media, caches or nested archives.
-5. Both ZIP files pass CRC, duplicate-name and SHA-256 checks.
+   The single player has keyboard bindings and one gamepad slot; controller two
+   remains idle at the static-core boundary.
+3. Dialogs support Tab and Shift+Tab navigation, F1 opens the Welcome window,
+   audio volume uses a 0-100 selector and applies immediately, and settings are
+   flushed to the single SimCity-style settings.ini file when saved. General,
+   display, audio, input, bindings and first-run Welcome state share that file.
+4. Escape closes every frontend subwindow. Browse starts in the portable Rom
+   folder, then persists the directory of a successfully selected external ROM.
+5. Release contains no ROM and no pre-created empty output folders.
+6. Source archive contains no binaries, media, caches or nested archives.
+7. Both ZIP files pass CRC, duplicate-name and SHA-256 checks.

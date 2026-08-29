@@ -12,6 +12,7 @@ def main() -> int:
         out = clone / "generated/core-v01"
         shutil.rmtree(out)
         subprocess.run([sys.executable, str(clone / "tools/generate_mm2_direct_core.py"), str(clone)], check=True)
+        subprocess.run([sys.executable, str(clone / "tools/compact_mm2_direct_core.py"), str(clone)], check=True)
         expected = source / "generated/core-v01"
         expected_names = sorted(path.name for path in expected.iterdir()
                                 if path.is_file())

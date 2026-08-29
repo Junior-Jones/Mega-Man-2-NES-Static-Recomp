@@ -1,4 +1,4 @@
-# Mega Man 2 NES Static Recomp - 1.1.1
+# Mega Man 2 NES Static Recomp - 1.2.0
 
 This tree contains the native static-recompilation core, generated instruction
 identities, reproducibility evidence, tests, and the single-process Windows

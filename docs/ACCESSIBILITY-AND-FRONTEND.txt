@@ -1,4 +1,4 @@
-ACCESSIBILITY AND FRONTEND - 1.1.1
+ACCESSIBILITY AND FRONTEND - 1.2.0
 
 Launcher.exe uses standard Win32 menus, buttons, check boxes, combo boxes, and
 dialogs so keyboard navigation and Windows UI Automation expose names, roles,
@@ -25,5 +25,5 @@ and maps D-pad/left stick, west/south face buttons, Start and Back to NES input.
 The visual frontend was reviewed at 100 percent display scaling. The launcher,
 File, Settings, and Help menus, settings, controller bindings, accessible help text,
 About information, game view, and paused launcher view showed no clipped or overlapping
-controls after the 1.1.1 layout corrections. The game view preserves the enabled
+controls after the 1.2.0 layout corrections. The game view preserves the enabled
 4:3 correction with black pillarboxing rather than stretching.

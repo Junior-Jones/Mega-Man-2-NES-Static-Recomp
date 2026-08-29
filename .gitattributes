@@ -1,0 +1,20 @@
+* text=auto eol=lf
+
+# Source, configuration, tools and ordinary structured data use LF.
+tests/** text eol=lf
+tools/** text eol=lf
+src/** text eol=lf
+CMakeLists.txt text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.toml text eol=lf
+
+# Generated receipts are hashed as raw bytes. Most legacy proof/map inputs were
+# certified with Windows CRLF, while the direct core and four JSON receipts were
+# certified with LF. These specific overrides must follow the broad rules above.
+generated/** text eol=crlf
+generated/core-v01/** text eol=lf
+generated/upstream-audit-v03/upstream_audit_summary.json text eol=lf
+generated/program-map-v06/program_map_summary.json text eol=lf
+generated/reviewed-generation-v06/reviewed_generation_summary.json text eol=lf
+data/6502_opcodes.csv text eol=crlf

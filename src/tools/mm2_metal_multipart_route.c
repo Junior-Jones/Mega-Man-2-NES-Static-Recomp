@@ -26,6 +26,48 @@ typedef struct SnapshotHeader {
     char rom_sha256[65];
 } SnapshotHeader;
 
+typedef struct WideTraceStats {
+    uint64_t margin_frames;
+    uint64_t margin_sprite_pieces;
+    uint64_t active_object_margin_frames;
+} WideTraceStats;
+
+static void observe_wide_frame(const MM2DirectCore *core,
+                               WideTraceStats *stats) {
+    unsigned index;
+    int margin_frame = 0;
+    int active_margin_frame = 0;
+    if (!core || !stats) return;
+    for (index = 0u; index < core->wide_sprite_count; ++index) {
+        int left = core->wide_sprites[index].x;
+        if ((left < 0 && left + 7 >= -(int)MM2_PRESENTATION_WIDE_MARGIN) ||
+            (left < (int)(MM2_DIRECT_CORE_FRAME_WIDTH +
+                          MM2_PRESENTATION_WIDE_MARGIN) &&
+             left + 7 >= (int)MM2_DIRECT_CORE_FRAME_WIDTH)) {
+            stats->margin_sprite_pieces++;
+            margin_frame = 1;
+        }
+    }
+    for (index = 1u; index < 32u; ++index) {
+        int page_delta;
+        int screen_x;
+        if ((core->ram[0x420u + index] & 0x80u) == 0u) continue;
+        page_delta = (int)(int8_t)(uint8_t)(
+            core->ram[0x440u + index] - core->ram[0x20u]);
+        screen_x = page_delta * 256 + (int)core->ram[0x460u + index] -
+                   (int)core->ram[0x1Fu];
+        if ((screen_x >= -(int)MM2_PRESENTATION_WIDE_MARGIN && screen_x < 0) ||
+            (screen_x >= (int)MM2_DIRECT_CORE_FRAME_WIDTH &&
+             screen_x < (int)(MM2_DIRECT_CORE_FRAME_WIDTH +
+                              MM2_PRESENTATION_WIDE_MARGIN))) {
+            active_margin_frame = 1;
+            break;
+        }
+    }
+    if (margin_frame) stats->margin_frames++;
+    if (active_margin_frame) stats->active_object_margin_frames++;
+}
+
 static int make_dir(const char *path) {
     return MM2_MKDIR(path) == 0 || errno == EEXIST;
 }
@@ -59,18 +101,24 @@ static int save_snapshot(const char *path, const MM2DirectCore *core,
                          const MM2Rom *rom) {
     SnapshotHeader header = {{'M','M','2','P','A','R','T','S'}, 14u,
                              (uint32_t)sizeof(*core), {0}};
-    MM2DirectCore copy = *core;
+    MM2DirectCore *copy = (MM2DirectCore *)malloc(sizeof(*copy));
     FILE *file;
+    int ok;
+    if (!copy) return 0;
+    *copy = *core;
     memcpy(header.rom_sha256, rom->sha256, 64u);
     header.rom_sha256[64] = '\0';
-    copy.prg = NULL;
+    copy->prg = NULL;
     file = fopen(path, "wb");
-    if (!file) return 0;
-    if (fwrite(&header, 1u, sizeof(header), file) != sizeof(header) ||
-        fwrite(&copy, 1u, sizeof(copy), file) != sizeof(copy)) {
-        fclose(file); return 0;
+    if (!file) {
+        free(copy);
+        return 0;
     }
-    return fclose(file) == 0;
+    ok = fwrite(&header, 1u, sizeof(header), file) == sizeof(header) &&
+         fwrite(copy, 1u, sizeof(*copy), file) == sizeof(*copy);
+    if (fclose(file) != 0) ok = 0;
+    free(copy);
+    return ok;
 }
 static int load_snapshot(const char *path, MM2DirectCore *core,
                          const MM2Rom *rom) {
@@ -157,17 +205,20 @@ int main(int argc, char **argv) {
     uint64_t limit, instructions = 0u;
     unsigned part, passed = 0u;
     unsigned part_limit;
+    int wide_requested;
+    WideTraceStats total_wide = {0};
     FILE *result;
     if (argc != 4 && argc != 5) {
-        fprintf(stderr, "usage: %s ROM OUTPUT-DIR INSTRUCTION-LIMIT [START-SNAPSHOT]\n", argv[0]);
+        fprintf(stderr, "usage: %s ROM OUTPUT-DIR INSTRUCTION-LIMIT [START-SNAPSHOT|--wide]\n", argv[0]);
         return 2;
     }
+    wide_requested = argc == 5 && strcmp(argv[4], "--wide") == 0;
     limit = (uint64_t)strtoull(argv[3], NULL, 10);
-    part_limit = argc == 5 ? PART_COUNT : 24u;
+    part_limit = argc == 5 && !wide_requested ? PART_COUNT : 24u;
     if (!make_dir(argv[2])) return 3;
     if (!mm2_rom_load(argv[1], &rom, error, sizeof(error)) ||
         !mm2_rom_is_expected(&rom, reason, sizeof(reason))) return 4;
-    if (argc == 5) {
+    if (argc == 5 && !wide_requested) {
         if (!load_snapshot(argv[4], &core, &rom)) return 5;
     } else {
         if (!mm2_direct_core_reset(&core, &rom)) return 5;
@@ -183,17 +234,21 @@ int main(int argc, char **argv) {
             instructions++;
         }
     }
+    mm2_direct_core_set_wide_screen_enabled(&core, wide_requested);
     snprintf(result_path, sizeof(result_path), "%s/metal-multipart-result.json", argv[2]);
     result = fopen(result_path, "wb");
     if (!result) return 6;
-    fputs("{\n  \"format\":\"mega-man-2-metal-man-multipart-v1\",\n"
-          "  \"version\":\"1.1.1\",\n  \"parts\":[\n", result);
+    fprintf(result,
+          "{\n  \"format\":\"mega-man-2-metal-man-multipart-v1\",\n"
+          "  \"version\":\"1.2.0\",\n  \"wide_screen\":%s,\n  \"parts\":[\n",
+          wide_requested ? "true" : "false");
     for (part = 0u; part < part_limit && instructions < limit; ++part) {
         uint64_t start_frame = core.ppu_frames;
         uint64_t target = start_frame + part_length;
         MM2DirectCore best = core;
         uint64_t best_score = 0u;
         unsigned best_policy = 0u, policy;
+        WideTraceStats part_wide = {0};
         int ok;
         snprintf(part_dir, sizeof(part_dir), "%s/part-%u", argv[2], part + 1u);
         if (!make_dir(part_dir)) break;
@@ -226,7 +281,31 @@ int main(int argc, char **argv) {
             }
         }
         if (best_score == 0u) break;
-        core = best;
+        if (wide_requested) {
+            MM2DirectCore replay = core;
+            while (replay.ppu_frames < target) {
+                uint64_t previous_frame = replay.ppu_frames;
+                mm2_direct_core_set_controller(
+                    &replay, 0u,
+                    gameplay_buttons(replay.ppu_frames - start_frame,
+                                     best_policy));
+                if (!mm2_direct_core_step(&replay)) break;
+                if (replay.ppu_frames != previous_frame)
+                    observe_wide_frame(&replay, &part_wide);
+            }
+            if (replay.ppu_frames < target ||
+                replay.framebuffer_hash != best.framebuffer_hash ||
+                replay.trap != best.trap)
+                break;
+            core = replay;
+            total_wide.margin_frames += part_wide.margin_frames;
+            total_wide.margin_sprite_pieces +=
+                part_wide.margin_sprite_pieces;
+            total_wide.active_object_margin_frames +=
+                part_wide.active_object_margin_frames;
+        } else {
+            core = best;
+        }
         snprintf(screenshot_path, sizeof(screenshot_path),
                  "%s/end-frame.bmp", part_dir);
         snprintf(snapshot_path, sizeof(snapshot_path), "%s/end.mm2state", part_dir);
@@ -240,7 +319,10 @@ int main(int argc, char **argv) {
                 "\"end_frame\":%llu,\"framebuffer_hash_fnv1a64\":\"%016llX\","
                 "\"camera_screen\":%u,\"camera_x\":%u,\"player_x\":%u,"
                 "\"player_y\":%u,\"hp\":%u,\"lives\":%u,\"policy\":%u,"
-                "\"sprite_pixels\":%llu,\"snapshot\":\"part-%u/end.mm2state\","
+                "\"sprite_pixels\":%llu,\"wide_margin_frames\":%llu,"
+                "\"wide_margin_sprite_pieces\":%llu,"
+                "\"wide_active_object_margin_frames\":%llu,"
+                "\"snapshot\":\"part-%u/end.mm2state\","
                 "\"screenshot\":\"part-%u/end-frame.bmp\"}",
                 part + 1u, ok ? "true" : "false",
                 (unsigned long long)start_frame,
@@ -249,6 +331,9 @@ int main(int argc, char **argv) {
                 core.ram[0x20], core.ram[0x1F], core.ram[0x460],
                 core.ram[0x4A0], core.ram[0x6C0], core.ram[0xA8],
                 best_policy, (unsigned long long)core.sprite_pixels,
+                (unsigned long long)part_wide.margin_frames,
+                (unsigned long long)part_wide.margin_sprite_pieces,
+                (unsigned long long)part_wide.active_object_margin_frames,
                 part + 1u, part + 1u);
         if (!ok) break;
         passed++;
@@ -258,11 +343,17 @@ int main(int argc, char **argv) {
     fprintf(result,
             "\n  ],\n  \"parts_passed\":%u,\n  \"snapshot_reloads\":%u,\n"
             "  \"final_frame\":%llu,\n  \"final_hash\":\"%016llX\",\n"
-            "  \"trap\":\"%s\",\n  \"frontier\":\"adaptive 25-frame parts with rightward, wait, and recovery policies; boss-room entry is attempted and only claimed if evidenced\",\n  \"ok\":%s,\n"
+            "  \"trap\":\"%s\",\n  \"wide_margin_frames\":%llu,\n"
+            "  \"wide_margin_sprite_pieces\":%llu,\n"
+            "  \"wide_active_object_margin_frames\":%llu,\n"
+            "  \"frontier\":\"adaptive 25-frame parts with rightward, wait, and recovery policies; boss-room entry is attempted and only claimed if evidenced\",\n  \"ok\":%s,\n"
             "  \"goal\":\"reach the Metal Man boss room using deterministic rightward movement, conveyor-aware jumps and continuous fire\"\n}\n",
             passed, passed, (unsigned long long)core.ppu_frames,
             (unsigned long long)core.framebuffer_hash,
             mm2_direct_core_trap_name(core.trap),
+            (unsigned long long)total_wide.margin_frames,
+            (unsigned long long)total_wide.margin_sprite_pieces,
+            (unsigned long long)total_wide.active_object_margin_frames,
             passed == part_limit ? "true" : "false");
     fclose(result);
     printf("Metal multipart: %u/%u parts, frame=%llu, screen=%u camera=%u "
@@ -275,4 +366,3 @@ int main(int argc, char **argv) {
     mm2_rom_free(&rom);
     return passed == part_limit ? 0 : 7;
 }
-

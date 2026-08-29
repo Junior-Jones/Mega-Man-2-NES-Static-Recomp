@@ -26,7 +26,7 @@ static int write_result(const char *path, const char *command, int ok,
   fprintf(
       file,
       "{\n  \"format\": \"mega-man-2-headless-result-v9\",\n  \"version\": "
-      "\"1.1.1\",\n  \"milestone\": 9,\n"
+      "\"1.2.0\",\n  \"milestone\": 9,\n"
       "  \"command\": \"%s\",\n  \"ok\": %s,\n  \"rom_expected\": %s,\n  "
       "\"rom_sha256\": \"%s\",\n"
       "  \"proof_summary_bound\": %s,\n  \"legacy_upstream_audit_bound\": "
@@ -83,7 +83,7 @@ static int self_test(void) {
   if (mm2_direct_core_identity_count() != 20149u)
     return 12;
   printf("{\"format\":\"mega-man-2-headless-self-test-v9\",\"version\":\"pre-"
-         "1.1.1\",\"ok\":true,\"static_seed_records\":%llu,\"direct_core_"
+         "1.2.0\",\"ok\":true,\"static_seed_records\":%llu,\"direct_core_"
          "identities\":20149,\"runtime_opcode_fetch_decode_count\":0,\"ppu_scheduler_linked\":true,\"sprite_renderer_linked\":true,\"apu_trace_linked\":true,\"pcm_audio_runtime_linked\":true}\n",
          (unsigned long long)mm2_static_seed_count);
   return 0;
@@ -312,4 +312,3 @@ int main(int argc, char **argv) {
   usage(argv[0]);
   return 2;
 }
-

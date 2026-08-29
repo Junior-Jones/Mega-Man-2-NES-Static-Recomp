@@ -33,33 +33,36 @@ int mm2_route_advance_frame(MM2DirectCore *core, uint8_t player1,
     return !observation || mm2_direct_core_observe(core, observation);
 }
 
-int mm2_route_write_bmp(const char *path, const MM2DirectCore *core) {
-    uint32_t pixels[MM2_DIRECT_CORE_FRAME_PIXELS];
+static int write_bgra_bmp(const char *path, const uint32_t *pixels,
+                          uint32_t width, uint32_t height) {
     uint8_t header[54] = {0};
+    uint8_t padding[3] = {0u, 0u, 0u};
+    uint32_t row_bytes = width * 3u;
+    uint32_t row_padding = (4u - (row_bytes & 3u)) & 3u;
+    uint32_t image_bytes = (row_bytes + row_padding) * height;
     FILE *file;
     int y;
     unsigned x;
-    if (!path || !mm2_direct_core_frame_copy_bgra(
-            core, pixels, MM2_DIRECT_CORE_FRAME_PIXELS)) return 0;
+    if (!path || !pixels || width == 0u || height == 0u) return 0;
     file = fopen(path, "wb");
     if (!file) return 0;
     header[0] = 'B';
     header[1] = 'M';
-    put32(header + 2, 54u + 256u * 240u * 3u);
+    put32(header + 2, 54u + image_bytes);
     put32(header + 10, 54u);
     put32(header + 14, 40u);
-    put32(header + 18, 256u);
-    put32(header + 22, 240u);
+    put32(header + 18, width);
+    put32(header + 22, height);
     put16(header + 26, 1u);
     put16(header + 28, 24u);
-    put32(header + 34, 256u * 240u * 3u);
+    put32(header + 34, image_bytes);
     if (fwrite(header, 1u, sizeof(header), file) != sizeof(header)) {
         fclose(file);
         return 0;
     }
-    for (y = 239; y >= 0; --y) {
-        for (x = 0u; x < 256u; ++x) {
-            uint32_t color = pixels[(unsigned)y * 256u + x];
+    for (y = (int)height - 1; y >= 0; --y) {
+        for (x = 0u; x < width; ++x) {
+            uint32_t color = pixels[(size_t)(unsigned)y * width + x];
             uint8_t bgr[3] = {(uint8_t)color, (uint8_t)(color >> 8),
                               (uint8_t)(color >> 16)};
             if (fwrite(bgr, 1u, sizeof(bgr), file) != sizeof(bgr)) {
@@ -67,8 +70,36 @@ int mm2_route_write_bmp(const char *path, const MM2DirectCore *core) {
                 return 0;
             }
         }
+        if (row_padding != 0u &&
+            fwrite(padding, 1u, row_padding, file) != row_padding) {
+            fclose(file);
+            return 0;
+        }
     }
     return fclose(file) == 0;
+}
+
+int mm2_route_write_bmp(const char *path, const MM2DirectCore *core) {
+    uint32_t pixels[MM2_DIRECT_CORE_FRAME_PIXELS];
+    if (!mm2_direct_core_frame_copy_bgra(
+            core, pixels, MM2_DIRECT_CORE_FRAME_PIXELS)) return 0;
+    return write_bgra_bmp(path, pixels, MM2_DIRECT_CORE_FRAME_WIDTH,
+                          MM2_DIRECT_CORE_FRAME_HEIGHT);
+}
+
+int mm2_route_write_presentation_bmp(const char *path,
+                                     const MM2DirectCore *core,
+                                     int wide_screen_enabled,
+                                     MM2PresentationInfo *info) {
+    uint32_t pixels[MM2_PRESENTATION_MAX_FRAME_PIXELS];
+    MM2PresentationInfo local_info;
+    if (!mm2_direct_core_presentation_copy_bgra(
+            core, wide_screen_enabled, pixels,
+            MM2_PRESENTATION_MAX_FRAME_PIXELS, &local_info)) return 0;
+    if (!write_bgra_bmp(path, pixels, local_info.width, local_info.height))
+        return 0;
+    if (info) *info = local_info;
+    return 1;
 }
 
 int mm2_route_write_apu_csv(const char *path, const MM2DirectCore *core) {

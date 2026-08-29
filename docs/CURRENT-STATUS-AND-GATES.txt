@@ -1,4 +1,4 @@
-CURRENT STATIC-RECOMP STATUS: 1.1.1
+CURRENT STATIC-RECOMP STATUS: 1.2.0
 
 COMPLETE:
 
@@ -25,6 +25,9 @@ COMPLETE:
 - six generated physical-bank CPU translation units covering all 20,149
   identities behind a small generated bank dispatcher, with individual source
   hashes, an ordered tree hash and byte-identical clean regeneration;
+- compact generated authority preserving all 20,149 explicit identities while
+  factoring repeated implementations into 96 fixed helpers; the offline
+  context-to-helper sidecar is not linked and no runtime decoder was added;
 - generated RTS/RTI stack pulls are explicitly sequenced status/low/high so
   compiler evaluation order cannot swap emulated return-address bytes;
 - pulse sweep target/divider/reload behavior and a functional NTSC DMC path,

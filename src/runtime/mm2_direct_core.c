@@ -127,6 +127,55 @@ int mm2_direct_core_frame_copy_bgra(const MM2DirectCore *c, uint32_t *output,
         output[index] = UINT32_C(0xff000000) | rgb[c->framebuffer[index] & 0x3fu];
     return 1;
 }
+
+int mm2_direct_core_presentation_info(const MM2DirectCore *c,
+                                      int wide_screen_enabled,
+                                      MM2PresentationInfo *info) {
+    return ppu_presentation_info(c, wide_screen_enabled, info);
+}
+
+int mm2_direct_core_presentation_copy_indexed(
+    const MM2DirectCore *c, int wide_screen_enabled,
+    uint8_t *output, size_t capacity, MM2PresentationInfo *info) {
+    return ppu_presentation_copy_indexed(c, wide_screen_enabled, output,
+                                         capacity, info);
+}
+
+int mm2_direct_core_presentation_copy_bgra(
+    const MM2DirectCore *c, int wide_screen_enabled,
+    uint32_t *output, size_t capacity, MM2PresentationInfo *info) {
+    static const uint32_t rgb[64] = {
+        0x545454u,0x001E74u,0x081090u,0x300088u,0x440064u,0x5C0030u,0x540400u,0x3C1800u,
+        0x202A00u,0x083A00u,0x004000u,0x003C00u,0x00323Cu,0u,0u,0u,
+        0x989698u,0x084CC4u,0x3032ECu,0x5C1EE4u,0x8814B0u,0xA01464u,0x982220u,0x783C00u,
+        0x545A00u,0x287200u,0x087C00u,0x007628u,0x006678u,0u,0u,0u,
+        0xECEEECu,0x4C9AECu,0x787CECu,0xB062ECu,0xE454ECu,0xEC58B4u,0xEC6A64u,0xD48820u,
+        0xA0AA00u,0x74C400u,0x4CD020u,0x38CC6Cu,0x38B4CCu,0x3C3C3Cu,0u,0u,
+        0xECEEECu,0xA8CCECu,0xBCBCECu,0xD4B2ECu,0xECAEECu,0xECAED4u,0xECB4B0u,0xE4C490u,
+        0xCCD278u,0xB4DE78u,0xA8E290u,0x98E2B4u,0xA0D6E4u,0xA0A2A0u,0u,0u
+    };
+    uint8_t indexed[MM2_PRESENTATION_MAX_FRAME_PIXELS];
+    MM2PresentationInfo local;
+    size_t count;
+    size_t index;
+    if (!output || !ppu_presentation_copy_indexed(
+            c, wide_screen_enabled, indexed, sizeof(indexed), &local))
+        return 0;
+    count = (size_t)local.width * local.height;
+    if (capacity < count) return 0;
+    for (index = 0u; index < count; ++index)
+        output[index] = UINT32_C(0xff000000) | rgb[indexed[index] & 0x3fu];
+    if (info) *info = local;
+    return 1;
+}
+
+void mm2_direct_core_set_wide_screen_enabled(MM2DirectCore *c, int enabled) {
+    if (c) c->wide_screen_enabled = enabled ? 1u : 0u;
+}
+
+int mm2_direct_core_wide_screen_enabled(const MM2DirectCore *c) {
+    return c && c->wide_screen_enabled != 0u;
+}
 size_t mm2_direct_core_apu_write_count(const MM2DirectCore *c) { return c ? c->apu_write_count : 0u; }
 size_t mm2_direct_core_pcm_sample_count(const MM2DirectCore *c) { return c ? c->pcm_sample_count : 0u; }
 uint64_t mm2_direct_core_pcm_hash(const MM2DirectCore *c) { return c ? c->pcm_hash : 0u; }
@@ -309,6 +358,24 @@ int mm2_direct_core_state_import(MM2DirectCore *c, const void *input,
         copy->ppu_eval_sprite_in_range > 1u ||
         copy->ppu_eval_copy_done > 1u ||
         copy->ppu_eval_overflow_recorded > 1u ||
+        copy->wide_screen_enabled > 1u ||
+        copy->wide_sprite_count > MM2_WIDE_SPRITE_CAPTURE_CAPACITY ||
+        copy->wide_layout_mode > 2u ||
+        copy->presentation_latch.valid > 1u ||
+        copy->presentation_latch.mirroring > MM2_MIRROR_HORIZONTAL ||
+        copy->presentation_latch.wide_sprite_count >
+            MM2_WIDE_SPRITE_CAPTURE_CAPACITY ||
+        (copy->presentation_latch.valid &&
+         (copy->presentation_latch.wide_info.width !=
+              MM2_PRESENTATION_WIDE_FRAME_WIDTH ||
+          copy->presentation_latch.wide_info.height !=
+              MM2_DIRECT_CORE_FRAME_HEIGHT ||
+          copy->presentation_latch.wide_info.native_x !=
+              MM2_PRESENTATION_WIDE_MARGIN ||
+          copy->presentation_latch.wide_info.mode >
+              MM2_PRESENTATION_WIDE_GAMEPLAY ||
+          copy->presentation_latch.wide_info.reason >
+              MM2_PRESENTATION_REASON_UNSUPPORTED_LAYOUT)) ||
         copy->runtime_hook != NULL || copy->runtime_hook_user != NULL ||
         copy->runtime_hook_mask != 0u || copy->runtime_hook_stop_requested != 0u ||
         copy->runtime_hook_stopped != 0u || copy->runtime_hook_dispatching != 0u ||
@@ -331,6 +398,7 @@ int mm2_direct_core_step(MM2DirectCore *c) {
     uint32_t key;
     uint8_t bank;
     uint64_t start_cycles;
+    int wide_instruction_emulated = 0;
     if (!c || c->trap != MM2_CORE_TRAP_NONE || c->runtime_hook_stopped) return 0;
     if (c->runtime_hook_stop_requested) {
         commit_runtime_stop(c);
@@ -349,7 +417,30 @@ int mm2_direct_core_step(MM2DirectCore *c) {
         commit_runtime_stop(c);
         return 0;
     }
-    if (!mm2_direct_core_dispatch(c, bank, c->pc)) {
+    /* Bank $0F keeps the object finder and sprite builder in the fixed PRG
+       window while bank $0A supplies sprite data tables. In eligible wide
+       gameplay only, these reviewed boundaries expand the game's activation
+       bounds and preserve signed sprite positions that native OAM cannot
+       represent. Registers and simulated cycle counts remain owned by the
+       generated instruction; all other scenes take the untouched path. */
+    if (bank == 0x0Fu && c->pc == 0xEF8Cu &&
+        ppu_wide_keep_projectile_active(c)) {
+        /* $EF8C is the original 4:3 off-screen retirement (LSR $0420,X).
+           Keep Mega Buster slots on the original generated update/collision/
+           metasprite path until they leave the 71-pixel wide boundary. The
+           skipped instruction's identity and seven cycles remain accounted. */
+        c->pc = 0xEF8Fu;
+        c->cpu_cycles += 7u;
+        wide_instruction_emulated = 1;
+    } else if (bank == 0x0Fu && c->pc == 0xD670u)
+        ppu_wide_expand_object_window(c);
+    else if (bank == 0x0Fu && c->pc == 0xCC77u)
+        ppu_wide_sprite_capture_begin(c);
+    else if (bank == 0x0Fu && (c->pc == 0xCEDBu || c->pc == 0xCEE2u))
+        ppu_wide_sprite_capture_component(
+            c, c->x, c->a, c->pc == 0xCEDBu);
+    if (!wide_instruction_emulated &&
+        !mm2_direct_core_dispatch(c, bank, c->pc)) {
         c->trap = MM2_CORE_TRAP_MISSING_IDENTITY;
         emit_runtime_event(c, MM2_RUNTIME_EVENT_FRONTIER, 0u, 0u);
         return 0;

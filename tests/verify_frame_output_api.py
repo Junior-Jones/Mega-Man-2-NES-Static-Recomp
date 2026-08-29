@@ -28,11 +28,11 @@ for queue_field in ("pcm_output[8192]", "pcm_output_read",
     assert queue_field in private, queue_field
 
 for frontend_api in ("mm2_direct_core_advance_frame",
-                     "mm2_direct_core_frame_copy_indexed",
-                     "mm2_direct_core_frame_copy_bgra",
+                     "mm2_direct_core_presentation_copy_indexed",
                      "mm2_direct_core_audio_available",
                      "mm2_direct_core_audio_read"):
     assert frontend_api in live, frontend_api
+assert "s->video.pixels" in live
 for old_coupling in ("mm2_direct_core_step(", "pcm_total_samples",
                      "mm2_direct_core_pcm_copy"):
     assert old_coupling not in live, old_coupling

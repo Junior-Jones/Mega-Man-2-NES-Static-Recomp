@@ -28,7 +28,7 @@ assert direct["missing_identity_policy"] == "hard_trap"
 
 counts = {
     int(path.stem.rsplit("_", 1)[1], 16):
-        len(re.findall(r"^case 0x[0-9A-Fa-f]{4}u:", path.read_text(), re.M))
+        len(re.findall(r"^\s*case 0x[0-9A-Fa-f]{4}u:", path.read_text(), re.M))
     for path in shards
 }
 assert counts == {9: 122, 11: 4170, 12: 1249, 13: 3904, 14: 6027, 15: 4677}

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(MegaMan2NESStaticRecomp111 C CXX)
+project(MegaMan2NESStaticRecomp120 C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -45,6 +45,7 @@ add_library(mm2-direct-core STATIC
     src/runtime/mm2_apu.c
     src/runtime/mm2_scheduler.c
     src/runtime/mm2_snapshot.c
+    generated/core-v01/mm2_direct_core_compact.c
     generated/core-v01/mm2_direct_core_dispatch.c
     generated/core-v01/mm2_direct_core_bank_09.c
     generated/core-v01/mm2_direct_core_bank_0b.c
@@ -89,10 +90,16 @@ add_executable(mm2-apu-accuracy-selftest src/tools/mm2_apu_accuracy_selftest.c)
 target_link_libraries(mm2-apu-accuracy-selftest PRIVATE mm2-direct-core)
 add_executable(mm2-ppu-accuracy-selftest src/tools/mm2_ppu_accuracy_selftest.c)
 target_link_libraries(mm2-ppu-accuracy-selftest PRIVATE mm2-direct-core)
+add_executable(mm2-widescreen-selftest src/tools/mm2_widescreen_selftest.c)
+target_link_libraries(mm2-widescreen-selftest PRIVATE mm2-direct-core)
+add_executable(mm2-widescreen-snapshot-probe src/tools/mm2_widescreen_snapshot_probe.c)
+target_link_libraries(mm2-widescreen-snapshot-probe PRIVATE mm2-direct-core)
 add_executable(mm2-mesen-trace src/tools/mm2_mesen_trace.c)
 target_link_libraries(mm2-mesen-trace PRIVATE mm2-direct-core)
 add_executable(mm2-metal-multipart-route src/tools/mm2_metal_multipart_route.c)
 target_link_libraries(mm2-metal-multipart-route PRIVATE mm2-direct-core)
+add_executable(mm2-metal-stage-agent src/tools/mm2_metal_stage_agent.c)
+target_link_libraries(mm2-metal-stage-agent PRIVATE mm2-direct-core)
 
 # Certification and state-search executables deliberately inspect or clone the
 # private machine layout. Production frontends receive only the opaque public
@@ -102,8 +109,11 @@ set(MM2_INTERNAL_CORE_TOOLS
     mm2-runtime-hook-selftest
     mm2-apu-accuracy-selftest
     mm2-ppu-accuracy-selftest
+    mm2-widescreen-selftest
+    mm2-widescreen-snapshot-probe
     mm2-mesen-trace
-    mm2-metal-multipart-route)
+    mm2-metal-multipart-route
+    mm2-metal-stage-agent)
 foreach(mm2_internal_tool IN LISTS MM2_INTERNAL_CORE_TOOLS)
     target_include_directories(${mm2_internal_tool} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/internal")
@@ -134,6 +144,9 @@ if(WIN32)
             "${CMAKE_SOURCE_DIR}/VERSION.txt"
             "$<TARGET_FILE_DIR:mega-man-2-launcher>/VERSION.txt"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/Wide Screen (v1).txt"
+            "$<TARGET_FILE_DIR:mega-man-2-launcher>/Wide Screen (v1).txt"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${CMAKE_SOURCE_DIR}/third_party/SDL-LICENSE.txt"
             "$<TARGET_FILE_DIR:mega-man-2-launcher>/SDL-LICENSE.txt"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
@@ -153,7 +166,7 @@ if(WIN32)
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-    foreach(t mm2-foundation mm2-direct-core mm2-route-support mm2-rom-audit mm2-mmc1-selftest mm2-static-link-probe mm2-headless mm2-direct-core-selftest mm2-snapshot-selftest mm2-runtime-hook-selftest mm2-shared-frame-selftest mm2-native-route mm2-milestone09-route mm2-milestone10-route mm2-milestone12-route mm2-stage-matrix-route mm2-apu-accuracy-selftest mm2-ppu-accuracy-selftest mm2-mesen-trace mm2-metal-multipart-route)
+    foreach(t mm2-foundation mm2-direct-core mm2-route-support mm2-rom-audit mm2-mmc1-selftest mm2-static-link-probe mm2-headless mm2-direct-core-selftest mm2-snapshot-selftest mm2-runtime-hook-selftest mm2-shared-frame-selftest mm2-native-route mm2-milestone09-route mm2-milestone10-route mm2-milestone12-route mm2-stage-matrix-route mm2-apu-accuracy-selftest mm2-ppu-accuracy-selftest mm2-widescreen-selftest mm2-widescreen-snapshot-probe mm2-mesen-trace mm2-metal-multipart-route mm2-metal-stage-agent)
         target_compile_options(${t} PRIVATE -Wall -Wextra -Werror -Wpedantic)
     endforeach()
 endif()
@@ -162,10 +175,17 @@ if(TARGET mega-man-2-launcher AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 if(MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-    foreach(t mm2-foundation mm2-direct-core mm2-route-support mm2-rom-audit mm2-mmc1-selftest mm2-static-link-probe mm2-headless mm2-direct-core-selftest mm2-snapshot-selftest mm2-runtime-hook-selftest mm2-shared-frame-selftest mm2-native-route mm2-milestone09-route mm2-milestone10-route mm2-milestone12-route mm2-stage-matrix-route mm2-apu-accuracy-selftest mm2-ppu-accuracy-selftest mm2-mesen-trace mm2-metal-multipart-route mega-man-2-launcher)
+    foreach(t mm2-foundation mm2-direct-core mm2-route-support mm2-rom-audit mm2-mmc1-selftest mm2-static-link-probe mm2-headless mm2-direct-core-selftest mm2-snapshot-selftest mm2-runtime-hook-selftest mm2-shared-frame-selftest mm2-native-route mm2-milestone09-route mm2-milestone10-route mm2-milestone12-route mm2-stage-matrix-route mm2-apu-accuracy-selftest mm2-ppu-accuracy-selftest mm2-widescreen-selftest mm2-widescreen-snapshot-probe mm2-mesen-trace mm2-metal-multipart-route mm2-metal-stage-agent mega-man-2-launcher)
         if(TARGET ${t})
             target_compile_options(${t} PRIVATE /W4 /WX /permissive-)
         endif()
+    endforeach()
+
+    # These development-only route searchers keep several complete core-state
+    # candidates alive at once. Give them a deliberate stack reserve instead
+    # of depending on MSVC's 1 MiB executable default as the core state grows.
+    foreach(t mm2-metal-multipart-route mm2-metal-stage-agent)
+        target_link_options(${t} PRIVATE /STACK:8388608)
     endforeach()
 endif()
 
@@ -179,6 +199,7 @@ if(BUILD_TESTING)
     add_test(NAME shared-headed-headless-frame-self-test COMMAND mm2-shared-frame-selftest)
     add_test(NAME apu-timers-mixer-resampler-irq-self-test COMMAND mm2-apu-accuracy-selftest)
     add_test(NAME ppu-dot-timed-sprite-self-test COMMAND mm2-ppu-accuracy-selftest)
+    add_test(NAME widescreen-presentation-policy-self-test COMMAND mm2-widescreen-selftest)
     add_test(NAME pinned-mesen-differential-trace
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_mesen_differential.py
         $<TARGET_FILE:mm2-mesen-trace>
@@ -200,6 +221,9 @@ if(BUILD_TESTING)
     add_test(NAME core-owned-snapshot-api COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_snapshot_api.py ${CMAKE_SOURCE_DIR})
     add_test(NAME current-runtime-hook-api COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_runtime_hook_api.py ${CMAKE_SOURCE_DIR})
     add_test(NAME shared-headed-headless-frame-api COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_shared_frame_path.py ${CMAKE_SOURCE_DIR})
+    add_test(NAME windows-screenshot-capture-contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_windows_screenshot_capture.py ${CMAKE_SOURCE_DIR})
+    add_test(NAME windows-frontend-standard-contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_windows_frontend_standard.py ${CMAKE_SOURCE_DIR})
+    add_test(NAME windows-settings-persistence-contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_windows_settings_persistence.py ${CMAKE_SOURCE_DIR})
     add_test(NAME direct-core-subsystem-boundaries COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_subsystem_modules.py ${CMAKE_SOURCE_DIR})
     add_test(NAME whole-rom-certification COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_certification_v16.py ${CMAKE_SOURCE_DIR})
     if(MM2_TEST_ROM)

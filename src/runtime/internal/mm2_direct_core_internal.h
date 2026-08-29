@@ -4,6 +4,36 @@
 #include "mm2_direct_core.h"
 #include "mm2_mmc1.h"
 
+#define MM2_WIDE_SPRITE_CAPTURE_CAPACITY 64u
+
+typedef struct MM2WideSpriteCapture {
+    int16_t x;
+    uint8_t y;
+    uint8_t tile;
+    uint8_t attributes;
+    uint8_t oam_index;
+    uint8_t object_slot;
+} MM2WideSpriteCapture;
+
+/* Presentation data must describe the completed visible frame, not the PPU
+   memory after the following vblank/NMI has started changing CHR and
+   nametables.  This compact latch is captured when scanline 240 begins and is
+   shared by headed display, screenshots and headless frame copies. */
+typedef struct MM2PpuPresentationLatch {
+    uint8_t chr_ram[0x2000];
+    uint8_t ciram[0x800];
+    uint8_t palette[0x20];
+    MM2WideSpriteCapture wide_sprites[MM2_WIDE_SPRITE_CAPTURE_CAPACITY];
+    MM2PresentationInfo wide_info;
+    uint8_t ppu_ctrl;
+    uint8_t ppu_mask;
+    uint8_t scroll_x;
+    uint8_t scroll_y;
+    uint8_t mirroring;
+    uint8_t wide_sprite_count;
+    uint8_t valid;
+} MM2PpuPresentationLatch;
+
 /* Private machine layout. Production frontends use mm2_direct_core.h only.
    State-search and certification tools may opt in when writable inspection or
    cheap deterministic state cloning is part of the test itself. */
@@ -87,6 +117,17 @@ struct MM2DirectCore {
     uint8_t runtime_hook_stopped;
     uint8_t runtime_hook_dispatching;
     uint64_t runtime_hook_sequence;
+    uint8_t wide_screen_enabled;
+    MM2WideSpriteCapture wide_sprites[MM2_WIDE_SPRITE_CAPTURE_CAPACITY];
+    uint8_t wide_sprite_count;
+    uint8_t wide_layout_initialized;
+    uint8_t wide_layout_mode;
+    uint8_t wide_layout_stage;
+    uint8_t wide_layout_bank;
+    uint8_t wide_layout_screen;
+    uint8_t wide_layout_camera_x;
+    uint8_t wide_layout_camera_y;
+    MM2PpuPresentationLatch presentation_latch;
 };
 
 /* Internal subsystem contract. These functions are linked only inside the
@@ -98,6 +139,19 @@ void emit_runtime_event(MM2DirectCore *c, MM2RuntimeEventType type,
 uint8_t ppu_read_register(MM2DirectCore *c, unsigned reg);
 void ppu_write_register(MM2DirectCore *c, unsigned reg, uint8_t value);
 void ppu_tick(MM2DirectCore *c);
+int ppu_presentation_info(const MM2DirectCore *c, int wide_screen_enabled,
+                          MM2PresentationInfo *info);
+int ppu_presentation_copy_indexed(const MM2DirectCore *c,
+                                  int wide_screen_enabled,
+                                  uint8_t *output, size_t pixel_capacity,
+                                  MM2PresentationInfo *info);
+void ppu_wide_sprite_capture_begin(MM2DirectCore *c);
+void ppu_wide_sprite_capture_component(MM2DirectCore *c,
+                                       uint8_t oam_offset,
+                                       uint8_t wrapped_x,
+                                       int native_will_hide);
+void ppu_wide_expand_object_window(MM2DirectCore *c);
+int ppu_wide_keep_projectile_active(const MM2DirectCore *c);
 
 uint8_t mm2_apu_read_status(MM2DirectCore *c);
 void mm2_apu_write_register(MM2DirectCore *c, uint16_t address, uint8_t value);

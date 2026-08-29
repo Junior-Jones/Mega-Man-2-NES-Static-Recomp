@@ -42,7 +42,7 @@ int mm2_video_output_open(MM2VideoOutput *o,HWND hwnd,int vsync,wchar_t *error,s
         if(rp)SDL_DestroyProperties(rp);set_error(error,cap,L"Unable to configure video output");mm2_video_output_close(o);return 0;}
     o->renderer=SDL_CreateRendererWithProperties(rp);SDL_DestroyProperties(rp);
     if(!o->renderer){set_error(error,cap,L"Unable to create video renderer");mm2_video_output_close(o);return 0;}
-    o->texture=SDL_CreateTexture(o->renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,MM2_FRAME_WIDTH,MM2_FRAME_HEIGHT);
+    o->texture=SDL_CreateTexture(o->renderer,SDL_PIXELFORMAT_RGBA32,SDL_TEXTUREACCESS_STREAMING,MM2_VIDEO_MAX_WIDTH,MM2_VIDEO_HEIGHT);
     if(!o->texture||!SDL_SetTextureScaleMode(o->texture,SDL_SCALEMODE_NEAREST)){
         set_error(error,cap,L"Unable to create game texture");mm2_video_output_close(o);return 0;}
     o->vsync_enabled=vsync!=0;return 1;
@@ -53,28 +53,31 @@ void mm2_video_output_close(MM2VideoOutput *o){
     if(o->window)SDL_DestroyWindow(o->window);if(o->video_initialized)SDL_QuitSubSystem(SDL_INIT_VIDEO);std::memset(o,0,sizeof(*o));
 }
 
-int mm2_video_output_submit(MM2VideoOutput *o,const uint8_t *indices){
-    if(!o||!indices)return 0;
-    for(size_t i=0;i<MM2_FRAME_PIXELS;++i){uint32_t rgb=kNesRgb[indices[i]&0x3fu];o->pixels[i]=0xff000000u|((rgb&0xffu)<<16)|(rgb&0xff00u)|((rgb>>16)&0xffu);}
-    o->frame_valid=1;return 1;
+int mm2_video_output_submit(MM2VideoOutput *o,const uint8_t *indices,int width,int height){
+    if(!o||!indices||width<1||width>MM2_VIDEO_MAX_WIDTH||height<1||height>MM2_VIDEO_HEIGHT)return 0;
+    const size_t count=(size_t)width*(size_t)height;
+    for(size_t i=0;i<count;++i){uint32_t rgb=kNesRgb[indices[i]&0x3fu];o->pixels[i]=0xff000000u|((rgb&0xffu)<<16)|(rgb&0xff00u)|((rgb>>16)&0xffu);}
+    o->active_width=width;o->active_height=height;o->frame_valid=1;return 1;
 }
 
 int mm2_video_output_present(MM2VideoOutput *o,int integer_scale,int correct_aspect){
     if(!o||!o->renderer||!o->texture||!o->frame_valid)return 0;
     int ow=0,oh=0;if(!SDL_GetRenderOutputSize(o->renderer,&ow,&oh))return 0;
-    const int aspect_width=correct_aspect?4:MM2_FRAME_WIDTH;
-    const int aspect_height=correct_aspect?3:MM2_FRAME_HEIGHT;
+    const int aspect_width=correct_aspect?(o->active_width>256?16:4):o->active_width;
+    const int aspect_height=correct_aspect?(o->active_width>256?9:3):o->active_height;
     int dw=0,dh=0;
     if((long long)ow*aspect_height<=(long long)oh*aspect_width){dw=ow;dh=ow*aspect_height/aspect_width;}
     else{dh=oh;dw=oh*aspect_width/aspect_height;}
     if(integer_scale>=1&&integer_scale<=4){
-        const int requested_height=MM2_FRAME_HEIGHT*integer_scale;
+        const int requested_height=o->active_height*integer_scale;
         dh=std::min(oh,requested_height);dw=dh*aspect_width/aspect_height;
         if(dw>ow){dw=ow;dh=dw*aspect_height/aspect_width;}
     }
     SDL_FRect dst{(float)(ow-dw)/2.0f,(float)(oh-dh)/2.0f,(float)dw,(float)dh};
-    if(!SDL_UpdateTexture(o->texture,nullptr,o->pixels,MM2_FRAME_WIDTH*(int)sizeof(uint32_t))||
+    SDL_Rect update_rect{0,0,o->active_width,o->active_height};
+    SDL_FRect src{0.0f,0.0f,(float)o->active_width,(float)o->active_height};
+    if(!SDL_UpdateTexture(o->texture,&update_rect,o->pixels,o->active_width*(int)sizeof(uint32_t))||
        !SDL_SetRenderDrawColor(o->renderer,0,0,0,255)||!SDL_RenderClear(o->renderer)||
-       !SDL_RenderTexture(o->renderer,o->texture,nullptr,&dst))return 0;
+       !SDL_RenderTexture(o->renderer,o->texture,&src,&dst))return 0;
     SDL_RenderPresent(o->renderer);return 1;
 }

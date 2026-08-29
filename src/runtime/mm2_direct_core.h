@@ -41,7 +41,36 @@ typedef struct MM2DirectCore MM2DirectCore;
 #define MM2_DIRECT_CORE_FRAME_HEIGHT 240u
 #define MM2_DIRECT_CORE_FRAME_PIXELS \
     (MM2_DIRECT_CORE_FRAME_WIDTH * MM2_DIRECT_CORE_FRAME_HEIGHT)
+#define MM2_PRESENTATION_WIDE_MARGIN 71u
+#define MM2_PRESENTATION_WIDE_FRAME_WIDTH \
+    (MM2_DIRECT_CORE_FRAME_WIDTH + MM2_PRESENTATION_WIDE_MARGIN * 2u)
+#define MM2_PRESENTATION_MAX_FRAME_PIXELS \
+    (MM2_PRESENTATION_WIDE_FRAME_WIDTH * MM2_DIRECT_CORE_FRAME_HEIGHT)
 #define MM2_DIRECT_CORE_DEFAULT_FRAME_INSTRUCTION_LIMIT 50000u
+
+typedef enum MM2PresentationMode {
+    MM2_PRESENTATION_NATIVE_4_3 = 0,
+    MM2_PRESENTATION_WIDE_GAMEPLAY = 1
+} MM2PresentationMode;
+
+typedef enum MM2PresentationReason {
+    MM2_PRESENTATION_REASON_WIDE_DISABLED = 0,
+    MM2_PRESENTATION_REASON_WIDE_GAMEPLAY = 1,
+    MM2_PRESENTATION_REASON_UNSUPPORTED_STAGE = 2,
+    MM2_PRESENTATION_REASON_FIXED_SCREEN_OR_MENU = 3,
+    MM2_PRESENTATION_REASON_PLAYER_INACTIVE = 4,
+    MM2_PRESENTATION_REASON_TRANSITION = 5,
+    MM2_PRESENTATION_REASON_BOSS_APPROACH_OR_ROOM = 6,
+    MM2_PRESENTATION_REASON_UNSUPPORTED_LAYOUT = 7
+} MM2PresentationReason;
+
+typedef struct MM2PresentationInfo {
+    uint32_t width;
+    uint32_t height;
+    uint32_t native_x;
+    MM2PresentationMode mode;
+    MM2PresentationReason reason;
+} MM2PresentationInfo;
 
 typedef struct MM2FrameResult {
     uint8_t completed;
@@ -169,6 +198,18 @@ int mm2_direct_core_frame_copy_indexed(const MM2DirectCore *core,
 int mm2_direct_core_frame_copy_bgra(const MM2DirectCore *core,
                                     uint32_t *output,
                                     size_t pixel_capacity);
+int mm2_direct_core_presentation_info(const MM2DirectCore *core,
+                                      int wide_screen_enabled,
+                                      MM2PresentationInfo *info);
+int mm2_direct_core_presentation_copy_indexed(
+    const MM2DirectCore *core, int wide_screen_enabled,
+    uint8_t *output, size_t pixel_capacity, MM2PresentationInfo *info);
+int mm2_direct_core_presentation_copy_bgra(
+    const MM2DirectCore *core, int wide_screen_enabled,
+    uint32_t *output, size_t pixel_capacity, MM2PresentationInfo *info);
+void mm2_direct_core_set_wide_screen_enabled(MM2DirectCore *core,
+                                             int enabled);
+int mm2_direct_core_wide_screen_enabled(const MM2DirectCore *core);
 uint64_t mm2_direct_core_render_hash(const MM2DirectCore *core);
 
 uint64_t mm2_direct_core_pcm_total_samples(const MM2DirectCore *core);

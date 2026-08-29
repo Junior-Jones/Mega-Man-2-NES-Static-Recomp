@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = "Stop"
 $SourceDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $ProjectRoot = Split-Path -Parent (Split-Path -Parent $SourceDir)
-if (-not $BuildDir) { $BuildDir = Join-Path $ProjectRoot "Build\1.1.1\cmake" }
+if (-not $BuildDir) { $BuildDir = Join-Path $ProjectRoot "Build\1.2.0\cmake" }
 if (-not $InstallDir) { $InstallDir = Join-Path $BuildDir "install" }
 $resolvedProject = [IO.Path]::GetFullPath($ProjectRoot).TrimEnd('\') + '\'
 foreach ($candidate in @($BuildDir,$InstallDir)) {
@@ -46,7 +46,7 @@ if (-not $NesRecompExe) {
 }
 if ($RomPath -and $NesRecompExe) {
     $args += "-DMM2_NESRECOMP_EXE=$NesRecompExe"
-    $args += "-DMM2_PROJECT_TEMP=$(Join-Path $ProjectRoot 'Temp\1.1.1')"
+    $args += "-DMM2_PROJECT_TEMP=$(Join-Path $ProjectRoot 'Temp\1.2.0')"
 }
 try {
     & $CMakeExe @args -G "Visual Studio 17 2022"
@@ -57,7 +57,7 @@ try {
     if ($RomPath) { $args += "-DMM2_TEST_ROM=$RomPath" }
     if ($RomPath -and $NesRecompExe) {
         $args += "-DMM2_NESRECOMP_EXE=$NesRecompExe"
-        $args += "-DMM2_PROJECT_TEMP=$(Join-Path $ProjectRoot 'Temp\1.1.1')"
+        $args += "-DMM2_PROJECT_TEMP=$(Join-Path $ProjectRoot 'Temp\1.2.0')"
     }
     & $CMakeExe @args
     if ($LASTEXITCODE -ne 0) { throw "Ninja CMake configure failed: $LASTEXITCODE" }
@@ -77,4 +77,3 @@ New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Install failed: $LASTEXITCODE" }
 Write-Host "Windows build complete: $InstallDir"
 Write-Host "The ROM was referenced for tests only and was not copied."
-

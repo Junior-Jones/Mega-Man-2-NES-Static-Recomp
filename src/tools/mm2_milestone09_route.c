@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     result = fopen(result_path, "wb");
     if (!result) { mm2_direct_core_destroy(core); mm2_rom_free(&rom); return 7; }
     fprintf(result,
-      "{\n  \"format\": \"mega-man-2-title-input-pcm-route-v1\",\n  \"version\": \"1.1.1\",\n"
+      "{\n  \"format\": \"mega-man-2-title-input-pcm-route-v1\",\n  \"version\": \"1.2.0\",\n"
       "  \"ok\": %s,\n  \"instructions\": %llu,\n  \"cpu_cycles\": %llu,\n  \"ppu_cycles\": %llu,\n"
       "  \"ppu_frames\": %llu,\n  \"nmi_count\": %llu,\n  \"framebuffer_hash_fnv1a64\": \"%016llX\",\n"
       "  \"apu_write_events\": %llu,\n  \"apu_write_overflow\": %llu,\n  \"trap\": \"%s\",\n"
@@ -102,4 +102,3 @@ int main(int argc, char **argv) {
     mm2_rom_free(&rom);
     return ok ? 0 : 8;
 }
-

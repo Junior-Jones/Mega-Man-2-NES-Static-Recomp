@@ -1,0 +1,367 @@
+#include "mm2_direct_core_internal.h"
+#include "mm2_rom.h"
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef _WIN32
+#include <direct.h>
+#define MM2_MKDIR(path) _mkdir(path)
+#else
+#include <sys/stat.h>
+#define MM2_MKDIR(path) mkdir(path, 0777)
+#endif
+
+static const uint8_t rgb[64][3] = {
+ {84,84,84},{0,30,116},{8,16,144},{48,0,136},{68,0,100},{92,0,48},{84,4,0},{60,24,0},{32,42,0},{8,58,0},{0,64,0},{0,60,0},{0,50,60},{0,0,0},{0,0,0},{0,0,0},
+ {152,150,152},{8,76,196},{48,50,236},{92,30,228},{136,20,176},{160,20,100},{152,34,32},{120,60,0},{84,90,0},{40,114,0},{8,124,0},{0,118,40},{0,102,120},{0,0,0},{0,0,0},{0,0,0},
+ {236,238,236},{76,154,236},{120,124,236},{176,98,236},{228,84,236},{236,88,180},{236,106,100},{212,136,32},{160,170,0},{116,196,0},{76,208,32},{56,204,108},{56,180,204},{60,60,60},{0,0,0},{0,0,0},
+ {236,238,236},{168,204,236},{188,188,236},{212,178,236},{236,174,236},{236,174,212},{236,180,176},{228,196,144},{204,210,120},{180,222,120},{168,226,144},{152,226,180},{160,214,228},{160,162,160},{0,0,0},{0,0,0}
+};
+
+typedef struct SnapshotHeader {
+    char magic[8];
+    uint32_t version;
+    uint32_t core_size;
+    char rom_sha256[65];
+} SnapshotHeader;
+
+static int make_dir(const char *path) {
+    return MM2_MKDIR(path) == 0 || errno == EEXIST;
+}
+static void put16(uint8_t *p, unsigned v) {
+    p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8);
+}
+static void put32(uint8_t *p, uint32_t v) {
+    p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8);
+    p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24);
+}
+static int write_bmp(const char *path, const MM2DirectCore *core) {
+    FILE *file = fopen(path, "wb");
+    uint8_t header[54] = {0};
+    int y;
+    unsigned x;
+    if (!file) return 0;
+    header[0] = 'B'; header[1] = 'M';
+    put32(header + 2, 54u + 256u * 240u * 3u); put32(header + 10, 54u);
+    put32(header + 14, 40u); put32(header + 18, 256u); put32(header + 22, 240u);
+    put16(header + 26, 1u); put16(header + 28, 24u);
+    put32(header + 34, 256u * 240u * 3u);
+    fwrite(header, 1u, sizeof(header), file);
+    for (y = 239; y >= 0; --y) for (x = 0u; x < 256u; ++x) {
+        const uint8_t *color = rgb[core->framebuffer[(unsigned)y * 256u + x] & 0x3Fu];
+        uint8_t bgr[3] = {color[2], color[1], color[0]};
+        fwrite(bgr, 1u, 3u, file);
+    }
+    return fclose(file) == 0;
+}
+static int save_snapshot(const char *path, const MM2DirectCore *core,
+                         const MM2Rom *rom) {
+    SnapshotHeader header = {{'M','M','2','P','A','R','T','S'}, 14u,
+                             (uint32_t)sizeof(*core), {0}};
+    MM2DirectCore copy = *core;
+    FILE *file;
+    memcpy(header.rom_sha256, rom->sha256, 64u);
+    header.rom_sha256[64] = '\0';
+    copy.prg = NULL;
+    file = fopen(path, "wb");
+    if (!file) return 0;
+    if (fwrite(&header, 1u, sizeof(header), file) != sizeof(header) ||
+        fwrite(&copy, 1u, sizeof(copy), file) != sizeof(copy)) {
+        fclose(file); return 0;
+    }
+    return fclose(file) == 0;
+}
+static int load_snapshot(const char *path, MM2DirectCore *core,
+                         const MM2Rom *rom) {
+    SnapshotHeader header;
+    FILE *file = fopen(path, "rb");
+    if (!file) return 0;
+    if (fread(&header, 1u, sizeof(header), file) != sizeof(header) ||
+        fread(core, 1u, sizeof(*core), file) != sizeof(*core) ||
+        memcmp(header.magic, "MM2PARTS", 8u) != 0 ||
+        header.version != 14u || header.core_size != sizeof(*core) ||
+        strcmp(header.rom_sha256, rom->sha256) != 0) {
+        fclose(file); return 0;
+    }
+    fclose(file);
+    core->prg = rom->prg;
+    core->prg_size = rom->prg_size;
+    return 1;
+}
+static uint8_t startup_buttons(uint64_t frame) {
+    if ((frame >= 280u && frame < 320u) ||
+        (frame >= 600u && frame < 640u) ||
+        (frame >= 850u && frame < 890u)) return 0xFFu;
+    if (frame >= 1200u && frame < 1210u) return 0x20u;
+    if (frame >= 1220u && frame < 1230u) return 0x40u;
+    if (frame >= 1270u && frame < 1280u) return 0x08u;
+    return 0u;
+}
+static uint8_t gameplay_buttons(uint64_t local_frame, unsigned policy) {
+    static const unsigned periods[8] =
+        {44u, 52u, 60u, 68u, 76u, 88u, 104u, 120u};
+    unsigned base_policy;
+    if (policy == 513u) {
+        if (local_frame < 8u) return 0x20u;       /* choose Stage Select */
+        if (local_frame >= 12u && local_frame < 16u) return 0x08u;
+        return 0u;
+    }
+    base_policy = policy & 63u;
+    unsigned direction = policy / 64u;
+    uint8_t buttons;
+    switch (direction) {
+    case 0u: buttons = 0x80u; break;        /* right */
+    case 1u: buttons = 0u; break;           /* wait */
+    case 2u: buttons = 0x40u; break;        /* left recovery */
+    case 3u: buttons = 0x20u; break;        /* down */
+    case 4u: buttons = 0xA0u; break;        /* right + down */
+    case 5u: buttons = 0x60u; break;        /* left + down */
+    case 6u: buttons = 0x10u; break;        /* up */
+    default: buttons = 0x90u; break;        /* right + up */
+    }
+    if (base_policy == 62u) return buttons; /* deliberate pure direction/idle */
+    if (base_policy == 63u) {
+        if (local_frame % 10u < 3u) buttons |= 0x02u;
+        return buttons;                     /* deliberate no-jump/fall policy */
+    }
+    unsigned jump_period = periods[base_policy & 7u];
+    unsigned phase = (base_policy >> 3) != 0u && jump_period != 0u
+                       ? jump_period / 2u : 0u;
+    unsigned jump_hold = (base_policy & 16u) != 0u ? 32u : 22u;
+    if ((local_frame + phase) % jump_period < jump_hold) buttons |= 0x01u;
+    if (local_frame % ((base_policy & 32u) != 0u ? 10u :
+                       ((base_policy & 8u) != 0u ? 22u : 34u)) < 3u)
+        buttons |= 0x02u;
+    return buttons;
+}
+
+/* A compact, evidence-derived subset of the original 512 policies.  It keeps
+ * all eight useful directions but spends search time on jump/fire rhythms
+ * that actually won earlier checkpoints. */
+static const unsigned agent_policies[] = {
+      0u,  1u,  2u,  8u,  9u, 10u, 12u, 13u, 16u, 17u, 24u, 32u, 38u, 40u, 48u, 49u, 63u,
+     64u, 65u, 72u, 73u, 80u, 88u, 96u,100u,104u,112u,127u,
+    128u,129u,136u,137u,144u,152u,160u,168u,176u,191u,
+    192u,193u,200u,201u,208u,216u,224u,232u,240u,255u,
+    256u,257u,264u,265u,272u,280u,288u,296u,304u,319u,
+    320u,321u,328u,329u,336u,344u,352u,360u,368u,383u,
+    384u,385u,392u,393u,400u,408u,416u,424u,432u,447u,
+    448u,449u,456u,457u,464u,472u,480u,488u,496u,511u
+};
+static uint8_t known_opening_buttons(uint64_t frame) {
+    static const unsigned opening_75[12] =
+        {9u,0u,17u,0u,0u,9u,0u,8u,12u,2u,8u,13u};
+    static const unsigned bridge_25[4] = {8u,8u,0u,64u};
+    uint64_t local;
+    unsigned segment;
+    if (frame < 2950u) {
+        local = frame - 2050u;
+        segment = (unsigned)(local / 75u);
+        return gameplay_buttons(local % 75u, opening_75[segment]);
+    }
+    local = frame - 2950u;
+    segment = (unsigned)(local / 25u);
+    return gameplay_buttons(local % 25u, bridge_25[segment]);
+}
+static uint64_t progress_score(const MM2DirectCore *core, uint8_t start_lives) {
+    uint64_t camera = (uint64_t)core->ram[0x20] * 256u + core->ram[0x1F];
+    uint64_t vertical = (uint64_t)core->ram[0x22] * 256u + core->ram[0x4A0];
+    if (core->ram[0xA8] != start_lives || core->ram[0x6C0] == 0u) return 0u;
+    if ((core->ram[0x9A] & 0x40u) != 0u)
+        return 18000000000000000000ull + (uint64_t)core->ram[0x6C0] * 1000000u;
+    /* Boss HP reaches zero before the weapon-award transition sets $009A.
+     * Treat that transient state as a win; otherwise a greedy search prefers
+     * to leave Metal Man alive at 2 HP forever. */
+    if (core->ram[0x20] == 21u && core->ram[0x6C1] == 0u)
+        return 17000000000000000000ull +
+               (uint64_t)core->ram[0x6C0] * 1000000u;
+    /* Data Crystal's RAM map identifies $06C1 as boss HP.  Once the boss is
+     * live, damage outranks movement while survival still breaks ties. */
+    if (core->ram[0x20] >= 10u && core->ram[0x6C1] > 0u &&
+        core->ram[0x6C1] <= 28u) {
+        return 9000000000000000000ull +
+               (uint64_t)(28u - core->ram[0x6C1]) * 1000000000000000ull +
+               (uint64_t)core->ram[0x6C0] * 1000000000000ull +
+               camera * 1000u;
+    }
+    /* Progress must outrank opportunistic health pickups; the old weighting
+     * could stand still indefinitely because one HP was worth four screens. */
+    return 1000000000000ull + camera * 1000000000ull +
+           (core->ram[0x20] == 10u ? vertical * 1000000ull : 0u) +
+           (uint64_t)core->ram[0x6C0] * 1000000u +
+           (uint64_t)core->ram[0x460] * 1000u +
+           (core->ram[0x32] == 3u ? 0u : 1u);
+}
+
+int main(int argc, char **argv) {
+    enum { PART_COUNT = 160 };
+    static const uint64_t part_length = 25u;
+    MM2Rom rom;
+    MM2DirectCore core;
+    char error[256] = {0}, reason[256] = {0};
+    char part_dir[1024], snapshot_path[2048], screenshot_path[2048];
+    char result_path[1024];
+    uint64_t limit, instructions = 0u;
+    unsigned part, passed = 0u, health_refills = 0u;
+    unsigned part_limit;
+    int wide_requested;
+    FILE *result;
+    if (argc != 4 && argc != 5 && argc != 6) {
+        fprintf(stderr, "usage: %s ROM OUTPUT-DIR INSTRUCTION-LIMIT [START-SNAPSHOT] [--wide]\n", argv[0]);
+        return 2;
+    }
+    wide_requested = (argc == 5 && strcmp(argv[4], "--wide") == 0) ||
+                     (argc == 6 && strcmp(argv[5], "--wide") == 0);
+    if (argc == 6 && !wide_requested) return 2;
+    limit = (uint64_t)strtoull(argv[3], NULL, 10);
+    part_limit = argc >= 5 ? PART_COUNT : 80u;
+    if (!make_dir(argv[2])) return 3;
+    if (!mm2_rom_load(argv[1], &rom, error, sizeof(error)) ||
+        !mm2_rom_is_expected(&rom, reason, sizeof(reason))) return 4;
+    if ((argc == 5 && !wide_requested) || argc == 6) {
+        if (!load_snapshot(argv[4], &core, &rom)) return 5;
+    } else {
+        if (!mm2_direct_core_reset(&core, &rom)) return 5;
+        while (instructions < limit && core.ppu_frames < 2050u) {
+            mm2_direct_core_set_controller(&core, 0u, startup_buttons(core.ppu_frames));
+            if (!mm2_direct_core_step(&core)) break;
+            instructions++;
+        }
+        while (instructions < limit && core.ppu_frames < 3050u) {
+            mm2_direct_core_set_controller(
+                &core, 0u, known_opening_buttons(core.ppu_frames));
+            if (!mm2_direct_core_step(&core)) break;
+            instructions++;
+        }
+    }
+    mm2_direct_core_set_wide_screen_enabled(&core, wide_requested);
+    if ((core.ram[0x9A] & 0x40u) != 0u) part_limit = 1u;
+    snprintf(result_path, sizeof(result_path), "%s/metal-stage-agent-result.json", argv[2]);
+    result = fopen(result_path, "wb");
+    if (!result) return 6;
+    fprintf(result,
+          "{\n  \"format\":\"mega-man-2-metal-man-stage-agent-v1\",\n"
+          "  \"version\":\"1.2.0\",\n"
+          "  \"wide_screen\":%s,\n  \"parts\":[\n",
+          wide_requested ? "true" : "false");
+    for (part = 0u; part < part_limit && instructions < limit; ++part) {
+        if (core.ram[0x6C0] > 0u && core.ram[0x6C0] <= 12u) {
+            printf("agent health-refill frame=%llu hp=%u->28 (test-only)\n",
+                   (unsigned long long)core.ppu_frames, core.ram[0x6C0]);
+            core.ram[0x6C0] = 28u;
+            health_refills++;
+        }
+        uint64_t start_frame = core.ppu_frames;
+        int boss_active = core.ram[0x20] == 21u &&
+                          core.ram[0x6C1] > 0u && core.ram[0x6C1] <= 28u;
+        uint64_t commit_length = core.ram[0x20] == 16u ? 120u :
+                                 (boss_active ? 60u : part_length);
+        uint64_t target = start_frame + commit_length;
+        MM2DirectCore best = core;
+        MM2PresentationInfo presentation = {0};
+        uint64_t best_score = 0u;
+        unsigned best_policy = 0u, policy_index;
+        int ok;
+        snprintf(part_dir, sizeof(part_dir), "%s/part-%u", argv[2], part + 1u);
+        if (!make_dir(part_dir)) break;
+        int post_clear = (core.ram[0x9A] & 0x40u) != 0u;
+        size_t policy_limit = post_clear ? 1u :
+            (core.ram[0x20] >= 10u ?
+             sizeof(agent_policies) / sizeof(agent_policies[0]) : 35u);
+        for (policy_index = 0u; policy_index < policy_limit; ++policy_index) {
+            unsigned policy = post_clear ? 513u : agent_policies[policy_index];
+            MM2DirectCore trial = core;
+            MM2DirectCore commit = core;
+            uint64_t local_steps = 0u;
+            uint64_t planning_target = target +
+                (core.ram[0x20] == 10u ? 200u :
+                 (core.ram[0x20] == 16u ? 160u :
+                  (boss_active ? 180u : part_length)));
+            int captured_commit = 0;
+            while (trial.ppu_frames < planning_target && local_steps < limit) {
+                mm2_direct_core_set_controller(
+                    &trial, 0u,
+                    gameplay_buttons(trial.ppu_frames - start_frame, policy));
+                if (!mm2_direct_core_step(&trial)) break;
+                if (!captured_commit && trial.ppu_frames >= target) {
+                    commit = trial;
+                    captured_commit = 1;
+                }
+                local_steps++;
+            }
+            if (captured_commit && trial.ppu_frames >= planning_target &&
+                trial.trap == MM2_CORE_TRAP_NONE) {
+                uint64_t score = progress_score(&trial, core.ram[0xA8]);
+                if (score > best_score) {
+                    best_score = score;
+                    best = commit;
+                    best_policy = policy;
+                }
+            }
+        }
+        if (best_score == 0u) break;
+        core = best;
+        snprintf(screenshot_path, sizeof(screenshot_path),
+                 "%s/end-frame.bmp", part_dir);
+        snprintf(snapshot_path, sizeof(snapshot_path), "%s/end.mm2state", part_dir);
+        ok = core.trap == MM2_CORE_TRAP_NONE &&
+             core.ppu_frames >= target &&
+             mm2_direct_core_presentation_info(
+                 &core, wide_requested, &presentation) &&
+             write_bmp(screenshot_path, &core) &&
+             save_snapshot(snapshot_path, &core, &rom);
+        if (part != 0u) fputs(",\n", result);
+        fprintf(result,
+                "    {\"part\":%u,\"ok\":%s,\"start_frame\":%llu,"
+                "\"end_frame\":%llu,\"framebuffer_hash_fnv1a64\":\"%016llX\","
+                "\"camera_screen\":%u,\"camera_x\":%u,\"player_x\":%u,"
+                "\"player_y\":%u,\"hp\":%u,\"lives\":%u,\"policy\":%u,"
+                "\"sprite_pixels\":%llu,\"presentation_width\":%u,"
+                "\"presentation_mode\":\"%s\","
+                "\"snapshot\":\"part-%u/end.mm2state\","
+                "\"screenshot\":\"part-%u/end-frame.bmp\"}",
+                part + 1u, ok ? "true" : "false",
+                (unsigned long long)start_frame,
+                (unsigned long long)core.ppu_frames,
+                (unsigned long long)core.framebuffer_hash,
+                core.ram[0x20], core.ram[0x1F], core.ram[0x460],
+                core.ram[0x4A0], core.ram[0x6C0], core.ram[0xA8],
+                best_policy, (unsigned long long)core.sprite_pixels,
+                presentation.width,
+                presentation.mode == MM2_PRESENTATION_WIDE_GAMEPLAY ?
+                    "wide-gameplay" : "native-4:3",
+                part + 1u, part + 1u);
+        if (!ok) break;
+        passed++;
+        printf("agent part=%u frame=%llu screen=%u camera=(%u,%u) camera_state=%u player=(%u,%u) tile=%u hp=%u boss=%u lives=%u policy=%u unlock=%02X\n",
+               part + 1u, (unsigned long long)core.ppu_frames,
+               core.ram[0x20], core.ram[0x1F], core.ram[0x22],
+               core.ram[0x1B], core.ram[0x460], core.ram[0x4A0],
+               core.ram[0x32], core.ram[0x6C0], core.ram[0x6C1],
+               core.ram[0xA8], best_policy, core.ram[0x9A]);
+        fflush(stdout);
+        memset(&core, 0, sizeof(core));
+        if (!load_snapshot(snapshot_path, &core, &rom)) break;
+    }
+    fprintf(result,
+            "\n  ],\n  \"parts_passed\":%u,\n  \"snapshot_reloads\":%u,\n"
+            "  \"final_frame\":%llu,\n  \"final_hash\":\"%016llX\",\n"
+            "  \"trap\":\"%s\",\n  \"test_only_health_refills\":%u,\n  \"metal_blade_unlocked\":%s,\n  \"frontier\":\"checkpointed 25-frame native-core search with stage progress, survival, boss HP and weapon-unlock evidence\",\n  \"ok\":%s,\n"
+            "  \"goal\":\"clear Metal Man's stage and verify the Metal Blade unlock bit\"\n}\n",
+            passed, passed, (unsigned long long)core.ppu_frames,
+            (unsigned long long)core.framebuffer_hash,
+            mm2_direct_core_trap_name(core.trap), health_refills,
+            (core.ram[0x9A] & 0x40u) != 0u ? "true" : "false",
+            (core.ram[0x9A] & 0x40u) != 0u ? "true" : "false");
+    fclose(result);
+    printf("Metal multipart: %u/%u parts, frame=%llu, screen=%u camera=%u "
+           "player=(%u,%u) hp=%u lives=%u hash=%016llX trap=%s\n",
+           passed, part_limit, (unsigned long long)core.ppu_frames,
+           core.ram[0x20], core.ram[0x1F], core.ram[0x460],
+           core.ram[0x4A0], core.ram[0x6C0], core.ram[0xA8],
+           (unsigned long long)core.framebuffer_hash,
+           mm2_direct_core_trap_name(core.trap));
+    mm2_rom_free(&rom);
+    return (core.ram[0x9A] & 0x40u) != 0u ? 0 : 7;
+}

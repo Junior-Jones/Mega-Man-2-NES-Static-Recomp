@@ -1,18 +1,20 @@
 {
-  "format": "mega-man-2-direct-core-v2",
-  "version": "1.1.1",
-  "milestone": 7,
-  "architecture_revision": 2,
+  "format": "mega-man-2-direct-core-v3-compact",
+  "version": "1.2.0",
+  "milestone": 15,
+  "architecture_revision": 3,
   "source_program_map_sha256": "645754d31bcd57578134a7eaa3bf18d71f0a8276005862be39192b4376c30e51",
   "opcode_table_sha256": "1e3a3f9028a70e78cec2d21f8d77e9d9b88a6a54b1b8b742985bad8a1d372b09",
-  "generated_tree_sha256": "e31a40d44bd2c7da0c3311037acbcab9792eaf969d35ece75f0936af7f7da415",
+  "generated_tree_sha256": "fff7a88460498ae3eea06d930e87c31a87fa2073161a2270a8a9516d01778f4c",
   "generated_sources": {
-    "mm2_direct_core_bank_09.c": "c31371ee396f9b39b68264f6d2caaab76ac4136f724506f2297a58da2bd6f8c0",
-    "mm2_direct_core_bank_0b.c": "5c343e67e91e431cd5c932c181b7164113e733455d6800b13bd0e4539ff411e3",
-    "mm2_direct_core_bank_0c.c": "4690f9f5b40302681fca5dfffcb26ad855920b634f6e51d6aa01bd29f4e3dd06",
-    "mm2_direct_core_bank_0d.c": "e3b0e2b2c4a84cd3c438e9cadbfc26d29418eab60c15bb1b2f4811977047a201",
-    "mm2_direct_core_bank_0e.c": "81c7466c79651602be8a176e8354f8a84399a97224cc80774169cbd71f57a0b7",
-    "mm2_direct_core_bank_0f.c": "4e43f9407ff99a0d1fab490241958234b750806ed1186bc66927d135093788de",
+    "mm2_direct_core_bank_09.c": "13932e82f71039a001ce0097d7d2cf2b26705083c10f85983c894ffde47fc6b3",
+    "mm2_direct_core_bank_0b.c": "57459698c281e13f5fe6159b7ca50bb428c49a23771fa78de921d68a6c179722",
+    "mm2_direct_core_bank_0c.c": "066c668ee0c4cfedaaed0d5eac25d173887d15fead7b8ff694ef9706829018ea",
+    "mm2_direct_core_bank_0d.c": "4c13cabfc1a69901bd69d35da060b7effe5f3467ad1e5b43ea40e1b448c26958",
+    "mm2_direct_core_bank_0e.c": "aad729e5277028c968ec6d4f3c7ce2d42d40adf85795d6805a32aae8a60a502c",
+    "mm2_direct_core_bank_0f.c": "4a9cfe34fa92c57db458801f8a8f62ad57b898303a6c67268299ad0f6b3f9c32",
+    "mm2_direct_core_compact.c": "c51e0c12d651a164c8ef73d27963785cdef4900e3cb278c7cda3b293e17036cf",
+    "mm2_direct_core_compact.h": "126f7bd6c7d2f0ce17ae3d44f1eedaefe0bc7a7a6e845f9e4ea9b25ddfd3847b",
     "mm2_direct_core_dispatch.c": "417e2dd84438294d0372ea9482ef1286f4506a1e9bc3179e54a8275db611b429"
   },
   "shard_count": 6,
@@ -30,5 +32,10 @@
   "runtime_opcode_fetch_decode_count": 0,
   "interpreter_fallback_count": 0,
   "missing_identity_policy": "hard_trap",
-  "direct_core_link_gate": "accepted"
+  "direct_core_link_gate": "accepted",
+  "compaction_sidecar_sha256": "ddd6833fcd3ecf99db2065f841b24090cd740d8e292650a6a0fd6f10351e43fa",
+  "compaction_context_count": 20149,
+  "compaction_helper_count": 96,
+  "original_generated_source_bytes": 3191471,
+  "compact_generated_source_bytes": 2102958
 }

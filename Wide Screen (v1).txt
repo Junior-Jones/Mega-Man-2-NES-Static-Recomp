@@ -1,0 +1,129 @@
+Mega Man 2 NES Static Recomp
+Wide Screen (v1) - Version 1.2.0
+
+Purpose
+Wide Screen (v1) expands eligible horizontal gameplay with real NES stage
+backgrounds, enemies, and Mega Buster projectiles. It does not stretch, mirror,
+repeat, or invent pixels from the original 4:3 framebuffer. The ROM and static
+core remain responsible for game logic, stage data, object updates, collision,
+sprite construction, and weapon behavior.
+
+Final geometry
+- Native core frame: 256x240 pixels.
+- Wide Screen (v1) frame: 398x240 pixels.
+- Added horizontal view: 71 pixels on the left and 71 pixels on the right.
+- The original 256x240 frame remains pixel-exact in the center.
+- Eligible horizontal gameplay renders real stage data into both margins.
+- Title screens, menus, vertical rooms, transitions, boss approaches, and boss
+  rooms retain the native 4:3 image centered inside the wide canvas.
+- Wide Screen (v1) is disabled by default for fresh settings and when upgrading
+  an older settings file. After that one-time migration, an explicit user
+  choice to enable or disable it is saved normally.
+
+Step-by-step implementation
+
+1. Establish native references
+   The unmodified 256x240 output, exact-ROM routes, Mesen differential traces,
+   eight Robot Master stage routes, and headed screenshots were retained as the
+   baseline. The original center frame must remain byte-identical when Wide
+   Screen (v1) is enabled.
+
+2. Expand the public framebuffer contract
+   The core exposes a maximum 398x240 presentation buffer, active width and
+   height, the 71-pixel native-image offset, the current presentation mode, and
+   a reason when a scene falls back to native 4:3. The frontend consumes these
+   values instead of assuming a fixed 256-pixel width.
+
+3. Detect eligible horizontal gameplay
+   The static core observes stage, PRG bank, screen page, camera X/Y, player
+   state, transition state, and boss state. Normal horizontal camera movement
+   enables the expanded view. Vertical movement, fixed screens, menus, inactive
+   player states, transitions, and boss rooms fail closed to centered 4:3.
+
+4. Render real background tiles
+   Each added pixel is sampled from the latched CHR RAM, CIRAM nametables,
+   attribute tables, palette, scroll registers, and active MMC1 mirroring mode.
+   Signed horizontal coordinates allow the renderer to resolve stage tiles on
+   both sides of the original NES viewport.
+
+5. Preserve the authoritative center image
+   The native 256x240 framebuffer is copied unchanged into the middle of every
+   398x240 wide presentation. Native PPU priority, the eight-sprite-per-scanline
+   limit, sprite-zero behavior, and fixed-screen artwork therefore remain under
+   the original renderer's authority.
+
+6. Capture signed sprite positions
+   Native NES OAM cannot directly represent sprites left of X=0 or beyond
+   X=255. Reviewed static sprite-builder contexts capture the original object's
+   signed screen position, tile, attributes, component offset, and OAM order.
+   Only pieces outside the native center are composited into the new margins.
+
+7. Preserve sprite priority and flipping
+   Margin sprites use the game's CHR patterns, palette selection, horizontal and
+   vertical flip flags, sprite size, ordering, and behind-background priority.
+   No replacement enemy or host-created gameplay object is introduced.
+
+8. Expand stage-object activation
+   The original object-finder boundaries are widened by 71 pixels on both sides
+   during eligible horizontal gameplay. Scheduled stage objects are activated
+   early enough for their original update, collision, and metasprite routines
+   to run before they enter the old 4:3 viewport.
+
+9. Keep Mega Buster shots active
+   Player projectile slots retain the original generated update and collision
+   path throughout the 398-pixel view. Their native off-screen retirement is
+   delayed only until a shot leaves the corresponding wide boundary.
+
+10. Keep unsupported scenes safe
+    Wide Screen (v1) deliberately does not reinterpret vertical layouts, fixed
+    rooms, Start menus, transitions, boss approaches, or boss arenas. Those
+    scenes show the exact 4:3 image with black side areas instead of guessing at
+    missing layout data.
+
+11. Latch a completed presentation
+    At the end of the visible scanlines, the core latches the completed frame's
+    CHR, CIRAM, palette, mirroring, scroll, captured sprites, and presentation
+    decision. The frontend receives that same completed state after vblank, so
+    vblank writes cannot leak into the wrong screenshot or side margin.
+
+12. Present without stretching
+    The statically linked SDL3 video path receives the active 256x240 or
+    398x240 framebuffer geometry. Windowed and full-screen modes preserve that
+    geometry, and F8 writes the exact displayed buffer rather than rebuilding a
+    screenshot from newer mutable core state.
+
+13. Add user control and persistence
+    Wide Screen (v1) is a toolbar checkbox and a Display value in settings.ini.
+    It can be toggled while gameplay is loaded. Disabling it immediately returns
+    to the original 256x240 presentation.
+
+Verification performed
+- Confirmed native-off output is an exact 256x240 framebuffer copy.
+- Confirmed unsupported scenes use a 398x240 canvas with an unchanged centered
+  256x240 image and black margins.
+- Confirmed eligible horizontal gameplay reports 398x240 with a 71-pixel native
+  offset and real nametable background pixels in both margins.
+- Confirmed signed enemy sprite components appear in the left and right margins.
+- Confirmed Mega Buster projectiles remain active inside the expanded view and
+  retire after leaving its boundary.
+- Confirmed title, menu, vertical, transition, boss-approach, and boss policies.
+- Compared Heat Man, Air Man, and Crash Man captures with online NES references.
+- Ran the eight-stage load and visual-oracle matrix.
+- Completed the 24-part Metal Man route without a static-core trap.
+- Confirmed F8 captures the exact displayed 398x240 output with collision-safe
+  millisecond filenames and checked file writes.
+
+Wide Screen (v1) boundaries
+- Version 1 widens supported horizontal gameplay only.
+- A scene that cannot be proven safe remains centered 4:3 with black sides.
+- Boss arenas are intentionally 4:3 because their layouts and behavior were
+  designed around the fixed NES viewport.
+- Later versions may add stage-specific handling after separate research and
+  deterministic tests; version 1 does not guess or hide unsupported behavior.
+
+Release invariants
+- The original ROM is external, unmodified, and not included.
+- Wide Screen (v1) changes presentation reach, not game rules.
+- Native 4:3 output remains available at all times.
+- Unknown generated CPU contexts remain fail-closed.
+- Controller port 2 remains inactive because Mega Man 2 is single-player.

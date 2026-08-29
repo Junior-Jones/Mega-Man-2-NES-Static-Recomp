@@ -1,2 +1,42 @@
-1.1.1
+Mega Man 2 NES Static Recomp
+Version: 1.2.0
+Platform: native 64-bit Windows
+Executable: Launcher.exe
+Frontend: native Win32 launcher; statically linked SDL3 video, audio and gamepad input
+Audio: native NES APU PCM at 44,100 Hz through a statically linked SDL3 audio stream
+ROM: Mega Man 2 (USA) .nes required externally and not included
 
+Changes in 1.2.0:
+- Added Wide Screen (v1), a real 398x240 presentation with 71 additional pixels on both sides of the original 256x240 NES frame.
+- Rendered eligible horizontal margins from the game's CHR RAM, CIRAM nametables, attributes, palette, scroll state and MMC1 mirroring instead of stretching or repeating the native framebuffer.
+- Kept the original 256x240 center image pixel-exact and under the native PPU renderer's authority.
+- Added proven scene classification so title screens, menus, vertical rooms, transitions, boss approaches and boss rooms remain centered native 4:3 with black sides.
+- Expanded original stage-object activation boundaries so enemies use their native update, collision and metasprite routes throughout the widened view.
+- Captured signed sprite components and preserved tile, palette, flip, ordering and background-priority behavior in both new margins.
+- Kept Mega Buster projectiles active until they leave the new 398-pixel gameplay boundary.
+- Added a completed-visible-frame presentation latch for CHR, CIRAM, palette, mirroring, scroll, wide sprites and presentation mode.
+- Moved frame delivery to the completed-frame boundary so vblank writes cannot contaminate the frame shown or captured.
+- Changed F8 screenshots to save the exact displayed framebuffer, including active 398x240 output, with millisecond collision-safe names and checked writes.
+- Added Wide Screen (v1).txt with the complete implementation, fallback policy and verification record.
+- Brought the launcher, Welcome, About, Settings, Controls and Audio windows up to the mature static-recomp frontend structure.
+- Changed the toolbar label and menu wording to Wide Screen (v1).
+- Added reliable Tab and Shift+Tab dialog navigation and made Escape close every frontend subwindow.
+- Made F1 open the existing Welcome window and removed redundant help-window behavior.
+- Replaced preset volume steps with a 0-100 drop-down while retaining a standard non-editable control.
+- Applied accepted volume changes immediately and added bounded SDL3 queue-depth and drift correction to reduce underruns.
+- Added repaint and resize handling for stable game presentation during window operations and screenshots.
+- Removed unsupported Player 2 controls and gamepad exposure; controller port 2 is always inactive at the static-core boundary.
+- Added one Player 1 keyboard layout, one hot-pluggable gamepad slot and Keyboard, Gamepad or combined input selection.
+- Consolidated General, Display, Audio, Player 1 controls, gamepad mappings and first-run Welcome state into one settings.ini file with legacy migration and immediate flushes.
+- Kept Wide Screen (v1) disabled by default for both fresh configurations and one-time upgrades from older settings files; later user choices remain persistent.
+- Added persistent ROM browse-folder storage: Rom is the default, and a successfully selected external folder becomes the next Browse default.
+- Kept Pause on Focus Loss disabled by default for new configurations.
+- Fixed clean-install quick saves by creating and validating the portable Snapshots folder before writing.
+- Added release-ready Snapshots and Screenshots folders with explanatory readme files.
+- Compacted all 20,149 explicit static-core identities into 96 fixed compile-time semantic helpers without adding runtime opcode decoding or fallback execution.
+- Reduced generated core source by 34.11%, semantic objects by 53.52%, the production core library by 52.00% and Launcher.exe by 35.71%.
+- Proved the compact core byte-identical to the uncompacted authority across the 4,000-frame controlled-gameplay route, including every BMP, WAV, APU trace and route JSON artifact.
+- Added the deterministic compaction generator, offline context-to-helper sidecar and detailed compaction receipt to the source package.
+- Preserved the exact ROM identity gate, opaque static-core API, generated fail-closed dispatch and core-owned ROM-bound snapshots.
+- Added and updated automated contracts for Wide Screen (v1), completed-frame timing, exact screenshot capture, single-player input and unified settings persistence.
+- Passed the strict MSVC /W4 /WX Release build, all 45 non-Metal regression tests, all eight stage load/visual routes and the 24-part Metal Man route.
