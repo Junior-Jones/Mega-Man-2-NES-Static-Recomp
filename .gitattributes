@@ -14,6 +14,7 @@ CMakeLists.txt text eol=lf
 # certified with LF. These specific overrides must follow the broad rules above.
 generated/** text eol=crlf
 generated/core-v01/** text eol=lf
+generated/analysis/mm2_direct_core_compaction.json text eol=lf
 generated/upstream-audit-v03/upstream_audit_summary.json text eol=lf
 generated/program-map-v06/program_map_summary.json text eol=lf
 generated/reviewed-generation-v06/reviewed_generation_summary.json text eol=lf
