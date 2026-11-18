@@ -1,4 +1,4 @@
-# Mega Man 2 (NES) Static Recomp 1.2.0
+# Mega Man 2 (NES) Static Recomp 1.2.1
 
 Native Windows static recompilation frontend and core for Mega Man 2 on the
 Nintendo Entertainment System.
@@ -6,6 +6,8 @@ Nintendo Entertainment System.
 The original game ROM is not included. Use a legally obtained Mega Man 2
 (USA) `.nes` ROM matching `ROM-REQUIREMENTS.txt` and place it in the portable
 `Rom` folder.
+
+See [RELEASE-NOTES.txt](RELEASE-NOTES.txt) for the widescreen fix and headless verification.
 
 ## What "fully static recompilation" means
 

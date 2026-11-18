@@ -1,4 +1,4 @@
-Mega Man 2 (NES) Static Recomp - 1.2.0
+Mega Man 2 (NES) Static Recomp - 1.2.1
 
 Launcher.exe is a portable Windows 10/11 frontend for the Mega Man 2 static
 recompilation core. The original game ROM is not included.
@@ -12,10 +12,10 @@ per second; the frontend follows the static core at that rate.
 
 Wide Screen (v1) expands supported horizontal gameplay to 398x240 using live
 stage backgrounds, enemies and Mega Buster projectiles. Title screens, menus,
-vertical rooms, transitions and boss rooms remain centred 4:3 in version 1.2.0.
+vertical rooms, transitions and boss rooms remain centred 4:3 in version 1.2.1.
 Wide Screen (v1) is disabled by default. Use its toolbar checkbox to turn the
 feature on or off. See Wide Screen (v1).txt for the implementation, safety
-policy and test details.
+policy. See RELEASE-NOTES.txt for the 1.2.1 fix and headless test results.
 
 Player 1 controls:
   Arrow keys  D-pad

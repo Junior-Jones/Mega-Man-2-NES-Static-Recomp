@@ -1,10 +1,14 @@
 Mega Man 2 NES Static Recomp
-Version: 1.2.0
+Version: 1.2.1
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: native Win32 launcher; statically linked SDL3 video, audio and gamepad input
 Audio: native NES APU PCM at 44,100 Hz through a statically linked SDL3 audio stream
 ROM: Mega Man 2 (USA) .nes required externally and not included
+
+Changes in 1.2.1:
+- Fixed both widescreen margins blinking during horizontal stage scrolling.
+- See RELEASE-NOTES.txt for the headless verification results.
 
 Changes in 1.2.0:
 - Added Wide Screen (v1), a real 398x240 presentation with 71 additional pixels on both sides of the original 256x240 NES frame.

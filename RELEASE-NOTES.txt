@@ -1,0 +1,29 @@
+Mega Man 2 (NES) Static Recomp 1.2.1
+18 November 2026
+
+Fixed the left and right edges blinking during horizontal gameplay with
+Wide Screen (v1) enabled. The shared renderer keeps both margins visible on
+completed gameplay frames while the game queues ordinary nametable updates
+for the next vblank. The fix covers the native queue's four-entry capacity
+and applies across supported horizontal gameplay in every stage.
+
+Headless verification
+
+- Passed all 46 tests in the Windows x64 Release regression suite, including
+  the 24-part Metal Man route, the native visual and audio oracles, and two
+  widescreen tests covering the completed-frame latch and full update queue.
+- Compared 13,188 frames across all eight Robot Master stages and six Wily
+  stages. The fix corrected 893 false 4:3 fallbacks across ten stages.
+  The captured Bubble Man and Wily 1 comparison frames had pixel-identical
+  native centers. Wily 1 also reproduced the blink with two pending updates.
+- Verified the Start menu paused the camera and that wide scrolling resumed
+  afterward. Boss-room checks covered all eight Robot Masters and the Wily
+  fortress, including both phases of Wily Machine 2 and the Alien fight.
+  The sampled boss fights used centered 4:3 presentation. Selected rooms
+  were reached using test-only checkpoints, room setup and health refills.
+
+Windows 10 and 11 x64
+
+Extract the Windows ZIP and run Launcher.exe. The release requires a
+separately obtained Mega Man 2 (USA) NES ROM matching ROM-REQUIREMENTS.txt
+in the source package. Place it in the portable Rom folder or use Browse.

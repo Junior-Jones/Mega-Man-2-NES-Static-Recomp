@@ -397,7 +397,10 @@ static MM2PresentationReason presentation_reason(const MM2DirectCore *c,
         return MM2_PRESENTATION_REASON_BOSS_APPROACH_OR_ROOM;
     if (c->wide_layout_mode != MM2_WIDE_LAYOUT_HORIZONTAL)
         return MM2_PRESENTATION_REASON_UNSUPPORTED_LAYOUT;
-    if (update != 0u && update != 0x80u)
+    /* $1B counts up to four queued horizontal nametable updates in the
+       game's $0300-$0353 buffer. Vblank applies them after this visible
+       frame, whose margins still come from the current PPU state. */
+    if (update > 4u && update != 0x80u)
         return MM2_PRESENTATION_REASON_TRANSITION;
     return MM2_PRESENTATION_REASON_WIDE_GAMEPLAY;
 }
