@@ -1,5 +1,7 @@
 # Mega Man 2 (NES) Static Recomp 1.2.2
 
+<a href="https://recomplauncher.com/game/mega-man-2-nes-static-recomp"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+
 Native Windows static recompilation frontend and core for Mega Man 2 on the
 Nintendo Entertainment System.
 

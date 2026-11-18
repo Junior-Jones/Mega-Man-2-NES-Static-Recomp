@@ -38,6 +38,9 @@ for token in (
     'g_rom_folder=exe_directory()+L"\\\\Rom"',
     'ofn.lpstrInitialDir=g_rom_folder.c_str()',
     'g_rom_folder=selected_folder;save_settings()',
+    'g_widescreen_override=options.widescreen',
+    'session_settings.wide_screen=effective_widescreen()',
+    'write_number(L"Display",L"Widescreen",g_settings.wide_screen)',
     'WritePrivateProfileStringW(L"General",L"RomFolder",g_rom_folder.c_str()',
     'write_number(L"Input",keyboard_key,(int)g_settings.bindings[0][a])',
     'write_number(L"Input",gamepad_key,g_settings.gamepad_bindings[a])',
@@ -66,6 +69,7 @@ for token in (
 
 assert "#define MM2_NES_PLAYER_COUNT 1" in live_header
 assert "s->wide_screen=1" in live
+assert "g_settings.wide_screen=options.widescreen" not in launcher
 assert "P2Action" not in launcher and "Player 2" not in launcher
 
 print("PASS every frontend option is unified, persisted and consumed")

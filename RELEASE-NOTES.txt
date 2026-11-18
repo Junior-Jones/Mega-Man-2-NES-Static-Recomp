@@ -22,6 +22,12 @@ Headless verification
   input checks with an unfocused SDL gameplay window. Hot-plugging passed.
 - The RecompLauncher test verified the default and optional Off setting,
   the portable Windows archive, Unicode ROM paths and invalid launch handling.
+- Windows startup checks confirmed the fresh default, preservation of
+  existing and legacy Off settings, and one-launch widescreen overrides.
+- Replayed eight Robot Master stages and six Wily stages with the 1.2.2
+  core. Compared gameplay traces, frame captures and RAM with the 1.2.1
+  reference, including a Start-menu pause and resume, both Wily Machine 2
+  phases and the Alien fight.
 
 Windows 10 and 11 x64
 
