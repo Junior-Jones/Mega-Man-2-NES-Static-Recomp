@@ -31,12 +31,16 @@ for key in (
 for token in (
     "constexpr int MM2_SETTINGS_VERSION=2",
     "settings_version<MM2_SETTINGS_VERSION",
-    "if(settings_version<MM2_SETTINGS_VERSION)g_settings.wide_screen=0",
+    'GetPrivateProfileIntW(L"Display",L"Widescreen",g_settings.wide_screen,g_ini_path.c_str())!=0',
+    'GetPrivateProfileIntW(L"Frontend",L"WideScreen",g_settings.wide_screen,g_ini_path.c_str())!=0',
     'write_number(L"General",L"SettingsVersion",MM2_SETTINGS_VERSION)',
     'g_ini_path=exe_directory()+L"\\\\settings.ini"',
     'g_rom_folder=exe_directory()+L"\\\\Rom"',
     'ofn.lpstrInitialDir=g_rom_folder.c_str()',
     'g_rom_folder=selected_folder;save_settings()',
+    'g_widescreen_override=options.widescreen',
+    'session_settings.wide_screen=effective_widescreen()',
+    'write_number(L"Display",L"Widescreen",g_settings.wide_screen)',
     'WritePrivateProfileStringW(L"General",L"RomFolder",g_rom_folder.c_str()',
     'write_number(L"Input",keyboard_key,(int)g_settings.bindings[0][a])',
     'write_number(L"Input",gamepad_key,g_settings.gamepad_bindings[a])',
@@ -64,7 +68,8 @@ for token in (
     assert token in live, f"saved option lacks a runtime consumer: {token}"
 
 assert "#define MM2_NES_PLAYER_COUNT 1" in live_header
-assert "s->wide_screen=0" in live
+assert "s->wide_screen=1" in live
+assert "g_settings.wide_screen=options.widescreen" not in launcher
 assert "P2Action" not in launcher and "Player 2" not in launcher
 
 print("PASS every frontend option is unified, persisted and consumed")

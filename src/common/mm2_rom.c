@@ -6,11 +6,11 @@
 #define EXPECTED_SHA "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf"
 #define EXPECTED_CRC 0x0FCFC04Du
 static void seterr(char *out, size_t cap, const char *msg) { size_t i=0; if(!out||!cap)return; while(msg[i]&&i+1<cap){out[i]=msg[i];i++;} out[i]=0; }
-int mm2_rom_load(const char *path, MM2Rom *rom, char *error, size_t error_cap) {
-    FILE *f; long n; size_t got, off; uint8_t digest[32];
+static int load_open_rom(FILE *f, MM2Rom *rom, char *error, size_t error_cap) {
+    long n; size_t got, off; uint8_t digest[32];
     if (!rom) { seterr(error,error_cap,"ROM output pointer is null"); return 0; }
     memset(rom,0,sizeof(*rom));
-    f=fopen(path,"rb"); if(!f){seterr(error,error_cap,"cannot open ROM");return 0;}
+    if(!f){seterr(error,error_cap,"cannot open ROM");return 0;}
     if(fseek(f,0,SEEK_END)!=0||(n=ftell(f))<16||fseek(f,0,SEEK_SET)!=0){fclose(f);seterr(error,error_cap,"cannot size ROM");return 0;}
     rom->file_data=(uint8_t*)malloc((size_t)n); if(!rom->file_data){fclose(f);seterr(error,error_cap,"out of memory");return 0;}
     got=fread(rom->file_data,1,(size_t)n,f); fclose(f); if(got!=(size_t)n){mm2_rom_free(rom);seterr(error,error_cap,"short ROM read");return 0;}
@@ -31,6 +31,14 @@ int mm2_rom_load(const char *path, MM2Rom *rom, char *error, size_t error_cap) {
     mm2_sha256(rom->file_data,rom->file_size,digest); mm2_hex(digest,32,rom->sha256);
     rom->payload_crc32=mm2_crc32(rom->prg,rom->payload_size); seterr(error,error_cap,""); return 1;
 }
+int mm2_rom_load(const char *path, MM2Rom *rom, char *error, size_t error_cap) {
+    return load_open_rom(rom && path ? fopen(path,"rb") : NULL, rom, error, error_cap);
+}
+#ifdef _WIN32
+int mm2_rom_load_wide(const wchar_t *path, MM2Rom *rom, char *error, size_t error_cap) {
+    return load_open_rom(rom && path ? _wfopen(path,L"rb") : NULL, rom, error, error_cap);
+}
+#endif
 void mm2_rom_free(MM2Rom *rom){if(rom&&rom->file_data)free(rom->file_data);if(rom)memset(rom,0,sizeof(*rom));}
 int mm2_rom_is_expected(const MM2Rom *r, char *reason, size_t cap){
     if(!r){seterr(reason,cap,"ROM is null");return 0;}

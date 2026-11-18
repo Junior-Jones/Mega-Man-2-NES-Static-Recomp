@@ -1,4 +1,4 @@
-Mega Man 2 (NES) Static Recomp - 1.2.1
+Mega Man 2 (NES) Static Recomp - 1.2.2
 
 Launcher.exe is a portable Windows 10/11 frontend for the Mega Man 2 static
 recompilation core. The original game ROM is not included.
@@ -7,15 +7,19 @@ Place a legally obtained Mega Man 2 (USA) .nes ROM in the Rom folder, then
 open Launcher.exe and select Run. Browse opens the Rom folder by default.
 After a valid ROM is selected elsewhere, Browse remembers that folder in the
 single settings.ini file and uses it as the next default browsing location.
+RecompLauncher can pass that ROM and start gameplay directly. A shortcut or
+script can run Launcher.exe --game "C:\Games\Mega Man 2 (USA).nes".
+Use --port-widescreen or --no-port-widescreen to override widescreen for one
+launch. Session logs are stored in Logs.
 This exact USA ROM uses the NES NTSC cadence of approximately 60.0988 frames
 per second; the frontend follows the static core at that rate.
 
 Wide Screen (v1) expands supported horizontal gameplay to 398x240 using live
 stage backgrounds, enemies and Mega Buster projectiles. Title screens, menus,
-vertical rooms, transitions and boss rooms remain centred 4:3 in version 1.2.1.
-Wide Screen (v1) is disabled by default. Use its toolbar checkbox to turn the
-feature on or off. See Wide Screen (v1).txt for the implementation, safety
-policy. See RELEASE-NOTES.txt for the 1.2.1 fix and headless test results.
+vertical rooms, transitions and boss rooms remain centred 4:3 in version 1.2.2.
+Wide Screen (v1) is on for fresh settings. The toolbar checkbox saves your
+preference. See Wide Screen (v1).txt for details and RELEASE-NOTES.txt
+for the 1.2.2 controller fix and headless test results.
 
 Player 1 controls:
   Arrow keys  D-pad
@@ -28,6 +32,11 @@ Escape switches between the game and Launcher. F1 shows the complete controls
 guide. F2/F3 save and load a snapshot, F4 opens settings, F5 opens
 controls, F6 opens audio settings, F7 runs the selected ROM, and F8
 captures the game window.
+
+Use the Gamepad column in Controls to remap a controller. Choose the NES
+action, press the controller button or stick direction you want, then select
+OK. Choose Gamepad or Keyboard + gamepad as the input source. If a game is
+already running, the new bindings take effect the next time gameplay starts.
 
 Welcome, About, Settings, Controls and Audio Settings close with Escape. Tab
 and Shift+Tab move between their controls without becoming trapped in a text

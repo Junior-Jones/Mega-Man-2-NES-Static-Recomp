@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #define MM2_GAMEPAD_BINDING_COUNT 8
+#define MM2_GAMEPAD_CAPTURE_PLAYER ((unsigned)-1)
 
 typedef enum MM2GamepadControl {
     MM2_GAMEPAD_DPAD_UP = 1,
@@ -44,6 +45,8 @@ typedef struct MM2GamepadInputWin32 {
     unsigned player_index;
     unsigned refresh_countdown;
     uint32_t analog_latched;
+    uint32_t capture_pressed;
+    int capture_ready;
     char preferred_guid[64];
     char guid[64];
     wchar_t name[160];
@@ -67,7 +70,9 @@ void mm2_gamepad_win32_guid(const MM2GamepadInputWin32 *input,
 void mm2_gamepad_win32_default_bindings(
     int bindings[MM2_GAMEPAD_BINDING_COUNT]);
 const wchar_t *mm2_gamepad_win32_control_name(int control);
-int mm2_gamepad_win32_capture_control(MM2GamepadInputWin32 *input);
+int mm2_gamepad_win32_capture_control(MM2GamepadInputWin32 *input,
+                                     int deadzone_percent);
+void mm2_gamepad_win32_set_capture_focus(int focused);
 void mm2_gamepad_win32_control_display_name(
     const MM2GamepadInputWin32 *input, int control,
     wchar_t *text, size_t capacity);

@@ -1,26 +1,33 @@
-Mega Man 2 (NES) Static Recomp 1.2.1
+Mega Man 2 (NES) Static Recomp 1.2.2
 18 November 2026
 
-Fixed the left and right edges blinking during horizontal gameplay with
-Wide Screen (v1) enabled. The shared renderer keeps both margins visible on
-completed gameplay frames while the game queues ordinary nametable updates
-for the next vblank. The fix covers the native queue's four-entry capacity
-and applies across supported horizontal gameplay in every stage.
+Windows changes
+
+- F5 Controls now has a Gamepad column. Choose an NES action, press the
+  desired gamepad button or stick direction, and select OK. Bindings are
+  saved in settings.ini and apply the next time gameplay starts.
+- Fixed the missing gamepad remapping path reported by a DualSense player.
+  The launcher now captures SDL gamepad input while Controls has focus,
+  including when the gameplay window is open.
+- Wide Screen (v1) is on when there is no saved preference. The launcher
+  honors existing On and Off choices. Eligible horizontal gameplay can
+  expand, while menus and boss rooms keep their centered original image.
+- Added a RecompLauncher manifest for verified ROM launch, display settings,
+  snapshots and session logs.
 
 Headless verification
 
-- Passed all 46 tests in the Windows x64 Release regression suite, including
-  the 24-part Metal Man route, the native visual and audio oracles, and two
-  widescreen tests covering the completed-frame latch and full update queue.
-- Compared 13,188 frames across all eight Robot Master stages and six Wily
-  stages. The fix corrected 893 false 4:3 fallbacks across ten stages.
-  The captured Bubble Man and Wily 1 comparison frames had pixel-identical
-  native centers. Wily 1 also reproduced the blink with two pending updates.
-- Verified the Start menu paused the camera and that wide scrolling resumed
-  afterward. Boss-room checks covered all eight Robot Masters and the Wily
-  fortress, including both phases of Wily Machine 2 and the Alien fight.
-  The sampled boss fights used centered 4:3 presentation. Selected rooms
-  were reached using test-only checkpoints, room setup and health refills.
+- SDL virtual DualSense, DualSense Edge, DualShock 4, Xbox 360 and Switch Pro
+  profiles passed button and stick capture, deadzone, labels, and NES
+  input checks with an unfocused SDL gameplay window. Hot-plugging passed.
+- The RecompLauncher test verified the default and optional Off setting,
+  the portable Windows archive, Unicode ROM paths and invalid launch handling.
+- Windows startup checks confirmed the fresh default, preservation of
+  existing and legacy Off settings, and one-launch widescreen overrides.
+- Replayed eight Robot Master stages and six Wily stages with the 1.2.2
+  core. Compared gameplay traces, frame captures and RAM with the 1.2.1
+  reference, including a Start-menu pause and resume, both Wily Machine 2
+  phases and the Alien fight.
 
 Windows 10 and 11 x64
 
