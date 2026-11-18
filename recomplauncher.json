@@ -1,0 +1,66 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "Mega Man 2",
+  "repo": "Junior-Jones/Mega-Man-2-NES-Static-Recomp",
+  "game": {
+    "kind": "iso",
+    "label": "Your own Mega Man 2 (USA) NES ROM (.nes, with its iNES header).",
+    "dumps": [
+      {
+        "name": "Mega Man 2 (USA) iNES ROM",
+        "size": 262160,
+        "crc32": "5E268761"
+      }
+    ]
+  },
+  "start": {
+    "program": ["Launcher.exe"],
+    "args": ["--game", "{game}"]
+  },
+  "config": [
+    {
+      "id": "main",
+      "format": "ini",
+      "file": [{"path": "{install}/settings.ini"}]
+    }
+  ],
+  "settings": [
+    {
+      "id": "fullscreen",
+      "label": "Full screen on Play",
+      "in": "main",
+      "choices": [
+        {"label": "Off", "set": {"General/FullScreenOnPlay": "0"}},
+        {"label": "On", "set": {"General/FullScreenOnPlay": "1"}}
+      ],
+      "defaults": {"General/FullScreenOnPlay": "0"}
+    },
+    {
+      "id": "widescreen",
+      "label": "Wide Screen (v1)",
+      "help": "Shows more of the stage during supported horizontal gameplay. Menus and boss rooms use the centered original view.",
+      "in": "main",
+      "choices": [
+        {"label": "Original", "set": {"Display/Widescreen": "0"}},
+        {"label": "Wide Screen", "set": {"Display/Widescreen": "1"}}
+      ],
+      "defaults": {"Display/Widescreen": "1"}
+    }
+  ],
+  "saves": ["{install}/Snapshots"],
+  "folders": {
+    "saves": [{"path": "{install}/Snapshots"}],
+    "logs": [{"path": "{install}/Logs"}]
+  },
+  "actions": [
+    {"id": "saves", "label": "Snapshots", "open": "saves"}
+  ],
+  "exit_codes": {
+    "2": "The launch options are invalid. Use --game followed by the ROM path.",
+    "3": "Select the exact Mega Man 2 (USA) NES ROM with its iNES header.",
+    "4": "Mega Man 2 could not start. Check the latest session log for details.",
+    "5": "The Mega Man 2 static core stopped. Check the latest session log for details."
+  },
+  "requires": ["start", "settings.ini", "settings.choices", "exit_codes"]
+}

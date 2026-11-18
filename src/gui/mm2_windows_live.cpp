@@ -6,6 +6,7 @@
 #include "mm2_audio_output_sdl3.h"
 #include "mm2_gamepad_input_win32.h"
 #include "mm2_video_output_sdl3.h"
+#include "mm2_windows_log.h"
 extern "C" {
 #include "mm2_direct_core.h"
 #include "mm2_rom.h"
@@ -36,7 +37,7 @@ struct MM2LiveWindow {
     uint8_t keyboard[MM2_NES_PLAYER_COUNT]{};
     uint8_t pressed[MM2_NES_PLAYER_COUNT]{};
     int32_t filter_input{},filter_high{},filter_low{};
-    bool paused{},failure_reported{};
+    bool paused{},failure_reported{},exit_on_failure{};
     LARGE_INTEGER frequency{};
     double next_tick{};
     HANDLE timer{};
@@ -95,13 +96,17 @@ void drain_audio(MM2LiveWindow *s){
 }
 void report_failure(MM2LiveWindow *s){if(!s||s->failure_reported)return;s->failure_reported=true;wchar_t msg[384]={};
     _snwprintf(msg,std::size(msg),L"The Mega Man 2 static core stopped at frame %llu. Trap: %S; PC $%04X.",
-        (unsigned long long)mm2_direct_core_frame_count(s->core),mm2_direct_core_trap_name(mm2_direct_core_trap(s->core)),mm2_direct_core_program_counter(s->core));MessageBoxW(s->owner,msg,L"Mega Man 2 static-core error",MB_OK|MB_ICONERROR);}
+        (unsigned long long)mm2_direct_core_frame_count(s->core),mm2_direct_core_trap_name(mm2_direct_core_trap(s->core)),mm2_direct_core_program_counter(s->core));
+    mm2_windows_log_write(msg);
+    if(s->exit_on_failure)PostMessageW(s->owner,MM2_WM_RUNTIME_FAILURE,0,0);
+    else MessageBoxW(s->owner,msg,L"Mega Man 2 static-core error",MB_OK|MB_ICONERROR);
+}
 void pump(MM2LiveWindow *s){
     if(!s)return;SDL_PumpEvents();if(s->paused){reset_clock(s);drain_audio(s);return;}
     LARGE_INTEGER now{};QueryPerformanceCounter(&now);double ticks=(double)s->frequency.QuadPart/kNesFps;unsigned ran=0;
     mm2_gamepad_win32_begin_frame(s->gamepads.data(),s->gamepads.size());
     uint8_t pad[MM2_NES_PLAYER_COUNT]={};
-    if(s->settings.input_source!=MM2_INPUT_KEYBOARD)
+    if(s->settings.input_source!=MM2_INPUT_KEYBOARD&&GetForegroundWindow()==s->owner)
         for(unsigned player=0;player<MM2_NES_PLAYER_COUNT;++player)
             pad[player]=(uint8_t)mm2_gamepad_win32_poll(&s->gamepads[player],s->settings.gamepad_bindings,s->settings.gamepad_deadzone_percent);
     while((double)now.QuadPart>=s->next_tick&&ran<4u){
@@ -110,6 +115,8 @@ void pump(MM2LiveWindow *s){
         /* Mega Man 2 is single-player. Keep the NES controller-two port
            electrically idle instead of exposing an unsupported host input. */
         if(!mm2_direct_core_advance_frame(s->core,buttons,0u,0u,&frame_result)){s->paused=true;mm2_audio_output_pause(&s->audio);report_failure(s);break;}
+        if(mm2_direct_core_frame_count(s->core)==1u)
+            mm2_windows_log_write(L"Completed the first emulated frame.");
         s->pressed[0]=0;s->next_tick+=ticks;++ran;
     }
     if(ran==4u&&(double)now.QuadPart>=s->next_tick+ticks*4.0)s->next_tick=(double)now.QuadPart+ticks;
@@ -166,14 +173,14 @@ LRESULT CALLBACK LiveProc(HWND w,UINT m,WPARAM wp,LPARAM lp){
 }
 }
 
-void mm2_windows_live_settings_defaults(MM2LiveSettings *s){if(!s)return;std::memset(s,0,sizeof(*s));s->wide_screen=0;s->correct_aspect=1;s->vsync=0;s->pause_on_focus_loss=0;s->audio_enabled=1;s->volume_percent=70;s->audio_latency_ms=60;s->input_source=MM2_INPUT_COMBINED;s->gamepad_deadzone_percent=35;
+void mm2_windows_live_settings_defaults(MM2LiveSettings *s){if(!s)return;std::memset(s,0,sizeof(*s));s->wide_screen=1;s->correct_aspect=1;s->vsync=0;s->pause_on_focus_loss=0;s->audio_enabled=1;s->volume_percent=70;s->audio_latency_ms=60;s->input_source=MM2_INPUT_COMBINED;s->gamepad_deadzone_percent=35;
     mm2_gamepad_win32_default_bindings(s->gamepad_bindings);
     UINT p1[8]={VK_UP,VK_DOWN,VK_LEFT,VK_RIGHT,'D','F','S','A'};std::memcpy(s->bindings[0],p1,sizeof(p1));}
 void mm2_windows_live_set_next_settings(const MM2LiveSettings *s){if(s){g_next=*s;g_next_ready=true;}}
 void mm2_windows_live_set_volume(int volume_percent){volume_percent=std::clamp(volume_percent,0,100);if(g_active){g_active->settings.volume_percent=volume_percent;mm2_audio_output_set_volume(&g_active->audio,volume_percent);}}
-bool mm2_windows_live_start(HWND owner,const wchar_t *rom_path,wchar_t *error,size_t count){
-    if(g_active)return false;auto *s=new MM2LiveWindow{};s->owner=owner;if(g_next_ready)s->settings=g_next;else mm2_windows_live_settings_defaults(&s->settings);
-    char reason[256]={};std::string path=utf8(rom_path);if(!mm2_rom_load(path.c_str(),&s->rom,reason,sizeof(reason))||!mm2_rom_is_expected(&s->rom,reason,sizeof(reason))){set_error(error,count,L"The selected file is not the required Mega Man 2 (USA) NES ROM.");mm2_rom_free(&s->rom);delete s;return false;}
+bool mm2_windows_live_start(HWND owner,const wchar_t *rom_path,wchar_t *error,size_t count,bool exit_on_failure){
+    if(g_active)return false;auto *s=new MM2LiveWindow{};s->owner=owner;s->exit_on_failure=exit_on_failure;if(g_next_ready)s->settings=g_next;else mm2_windows_live_settings_defaults(&s->settings);
+    char reason[256]={};if(!mm2_rom_load_wide(rom_path,&s->rom,reason,sizeof(reason))||!mm2_rom_is_expected(&s->rom,reason,sizeof(reason))){set_error(error,count,L"The selected file is not the required Mega Man 2 (USA) NES ROM.");mm2_rom_free(&s->rom);delete s;return false;}
     s->core=mm2_direct_core_create();if(!s->core||!mm2_direct_core_reset(s->core,&s->rom)){set_error(error,count,L"The Mega Man 2 static core could not reset.");mm2_direct_core_destroy(s->core);mm2_rom_free(&s->rom);delete s;return false;}mm2_direct_core_set_wide_screen_enabled(s->core,s->settings.wide_screen);
     QueryPerformanceFrequency(&s->frequency);if(s->frequency.QuadPart<=0){set_error(error,count,L"The high-resolution frame clock is unavailable.");mm2_direct_core_destroy(s->core);mm2_rom_free(&s->rom);delete s;return false;}
     open_gamepads(s);wchar_t backend[384]={};mm2_audio_output_initialize(&s->audio);if(s->settings.audio_enabled&&!mm2_audio_output_open(&s->audio,s->settings.volume_percent,s->settings.audio_latency_ms,backend,std::size(backend))){set_error(error,count,backend);close_gamepads(s);mm2_direct_core_destroy(s->core);mm2_rom_free(&s->rom);delete s;return false;}

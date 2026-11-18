@@ -1,4 +1,4 @@
-# Mega Man 2 (NES) Static Recomp 1.2.1
+# Mega Man 2 (NES) Static Recomp 1.2.2
 
 Native Windows static recompilation frontend and core for Mega Man 2 on the
 Nintendo Entertainment System.
@@ -7,7 +7,14 @@ The original game ROM is not included. Use a legally obtained Mega Man 2
 (USA) `.nes` ROM matching `ROM-REQUIREMENTS.txt` and place it in the portable
 `Rom` folder.
 
-See [RELEASE-NOTES.txt](RELEASE-NOTES.txt) for the widescreen fix and headless verification.
+RecompLauncher can pass the verified ROM directly to Play using the manifest
+shipped beside `Launcher.exe`. For a shortcut or script, use
+`Launcher.exe --game "C:\Games\Mega Man 2 (USA).nes"`. Add
+`--port-widescreen` or `--no-port-widescreen` to override the display setting
+for that launch. The portable `Snapshots` and `Logs` folders hold save states
+and session diagnostics.
+
+See [RELEASE-NOTES.txt](RELEASE-NOTES.txt) for the 1.2.2 changes and headless tests.
 
 ## What "fully static recompilation" means
 
@@ -58,6 +65,11 @@ reference traces. Those tools are not part of the production runtime.
 - Escape switches between the Launcher and game window.
 - F4 opens settings, F5 opens controller bindings, and F6 opens audio
   settings.
+- To remap a controller, select an action in the Gamepad column, press
+  its new control, and select OK. The new mapping applies at the next
+  gameplay start.
+- Wide Screen (v1) is on for fresh settings. The launcher remembers
+  explicit display choices.
 - SDL 3.4.10 video, audio, and gamepad support is statically linked.
 - No third-party DLL is required beside `Launcher.exe`.
 

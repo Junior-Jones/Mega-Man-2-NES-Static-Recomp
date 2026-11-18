@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(MegaMan2NESStaticRecomp121 VERSION 1.2.1 LANGUAGES C CXX)
+project(MegaMan2NESStaticRecomp122 VERSION 1.2.2 LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -124,6 +124,7 @@ if(WIN32)
         src/gui/launcher_version.rc
         src/gui/mm2_windows_launcher.cpp
         src/gui/mm2_windows_live.cpp
+        src/gui/mm2_windows_log.cpp
         src/gui/mm2_audio_output_sdl3.cpp
         src/gui/mm2_video_output_sdl3.cpp
         third_party/mm2-gamepad/mm2_gamepad_input_win32.c)
@@ -132,11 +133,14 @@ if(WIN32)
     target_compile_definitions(mega-man-2-launcher PRIVATE
         WIN32_LEAN_AND_MEAN NOMINMAX)
     target_link_libraries(mega-man-2-launcher PRIVATE
-        mm2-direct-core SDL3::SDL3-static comdlg32 user32 gdi32 ole32)
+        mm2-direct-core SDL3::SDL3-static comdlg32 user32 gdi32 ole32 shell32)
     set_target_properties(mega-man-2-launcher PROPERTIES
         OUTPUT_NAME "Launcher"
         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/release")
     add_custom_command(TARGET mega-man-2-launcher POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/recomplauncher.json"
+            "$<TARGET_FILE_DIR:mega-man-2-launcher>/recomplauncher.json"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${CMAKE_SOURCE_DIR}/README.txt"
             "$<TARGET_FILE_DIR:mega-man-2-launcher>/README.txt"
@@ -162,7 +166,9 @@ if(WIN32)
             "$<TARGET_FILE_DIR:mega-man-2-launcher>/Rom"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${CMAKE_SOURCE_DIR}/Rom/Readme.txt"
-            "$<TARGET_FILE_DIR:mega-man-2-launcher>/Rom/Readme.txt")
+            "$<TARGET_FILE_DIR:mega-man-2-launcher>/Rom/Readme.txt"
+        VERBATIM)
+    install(FILES recomplauncher.json DESTINATION .)
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
@@ -190,6 +196,21 @@ if(MSVC)
 endif()
 
 if(BUILD_TESTING)
+    if(WIN32)
+        add_executable(mm2-gamepad-selftest
+            tests/mm2_gamepad_selftest.c
+            third_party/mm2-gamepad/mm2_gamepad_input_win32.c)
+        target_include_directories(mm2-gamepad-selftest PRIVATE third_party/mm2-gamepad)
+        target_compile_definitions(mm2-gamepad-selftest PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+        target_link_libraries(mm2-gamepad-selftest PRIVATE SDL3::SDL3-static)
+        add_test(NAME windows-gamepad-remapping COMMAND mm2-gamepad-selftest
+            "${CMAKE_SOURCE_DIR}/third_party/gamecontrollerdb.txt")
+    endif()
+    if(WIN32)
+        add_test(NAME recomplauncher-package-and-arguments
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/verify_recomplauncher_package.py
+                ${CMAKE_SOURCE_DIR} $<TARGET_FILE:mega-man-2-launcher>)
+    endif()
     add_test(NAME mmc1-hardware-model COMMAND mm2-mmc1-selftest)
     add_test(NAME generated-static-seed-link COMMAND mm2-static-link-probe --self-test)
     add_test(NAME headless-self-test COMMAND mm2-headless --self-test)

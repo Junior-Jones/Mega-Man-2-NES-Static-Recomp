@@ -7,7 +7,6 @@
 #include <wchar.h>
 
 #define GAMEPAD_REFRESH_FRAMES 60u
-#define GAMEPAD_DEFAULT_DEADZONE_PERCENT 35
 #define GAMEPAD_HYSTERESIS_UNITS 3277
 
 static unsigned g_gamepad_users;
@@ -47,10 +46,13 @@ static void gamepad_guid_string(SDL_JoystickID id, char *text,
 static void close_gamepad(MM2GamepadInputWin32 *input) {
     if (!input) return;
     if (input->handle) SDL_CloseGamepad(input->handle);
-    if (input->player_index < 2u) g_open_gamepads[input->player_index] = 0;
+    if (input->handle && input->player_index < 2u)
+        g_open_gamepads[input->player_index] = 0;
     input->handle = NULL;
     input->name[0] = L'\0';
     input->analog_latched = 0u;
+    input->capture_pressed = 0u;
+    input->capture_ready = 0;
 }
 
 static int open_player_gamepad(MM2GamepadInputWin32 *input) {
@@ -67,15 +69,19 @@ static int open_player_gamepad(MM2GamepadInputWin32 *input) {
                 unsigned other = input->player_index == 0u ? 1u : 0u;
                 char candidate_guid[64];
                 int preferred_match;
-                if (other < 2u && g_open_gamepads[other] == gamepads[index])
+                if (input->player_index < 2u &&
+                    g_open_gamepads[other] == gamepads[index])
                     continue;
                 gamepad_guid_string(gamepads[index], candidate_guid,
                                     sizeof(candidate_guid));
-                preferred_match = input->preferred_guid[0] &&
-                    strcmp(input->preferred_guid, candidate_guid) == 0;
-                if ((pass == 0 && !preferred_match) ||
-                    (pass == 1 && input->preferred_guid[0] && preferred_match))
-                    continue;
+                if (input->player_index == MM2_GAMEPAD_CAPTURE_PLAYER &&
+                    g_open_gamepads[0] != 0) {
+                    preferred_match = g_open_gamepads[0] == gamepads[index];
+                } else {
+                    preferred_match = input->preferred_guid[0] &&
+                        strcmp(input->preferred_guid, candidate_guid) == 0;
+                }
+                if (preferred_match != (pass == 0)) continue;
                 input->handle = SDL_OpenGamepad(gamepads[index]);
                 if (input->handle) {
                     if (input->player_index < 2u)
@@ -112,8 +118,10 @@ int mm2_gamepad_win32_initialize(MM2GamepadInputWin32 *input,
     int length;
     if (!input) return 0;
     memset(input, 0, sizeof(*input));
-    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
-    if (g_gamepad_users == 0u && !SDL_InitSubSystem(SDL_INIT_GAMEPAD)) return 0;
+    if (g_gamepad_users == 0u) {
+        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) return 0;
+    }
     ++g_gamepad_users;
     input->initialized = 1;
     input->player_index = player_index;
@@ -289,8 +297,11 @@ const wchar_t *mm2_gamepad_win32_control_name(int control) {
     return names[control];
 }
 
-int mm2_gamepad_win32_capture_control(MM2GamepadInputWin32 *input) {
+int mm2_gamepad_win32_capture_control(MM2GamepadInputWin32 *input,
+                                     int deadzone_percent) {
     int control;
+    uint32_t pressed = 0u;
+    uint32_t newly_pressed;
     if (!input || !input->initialized) return 0;
     SDL_UpdateGamepads();
     if (input->handle && !SDL_GamepadConnected(input->handle)) close_gamepad(input);
@@ -298,9 +309,21 @@ int mm2_gamepad_win32_capture_control(MM2GamepadInputWin32 *input) {
     if (!input->handle) return 0;
     for (control = MM2_GAMEPAD_DPAD_UP;
          control <= MM2_GAMEPAD_CONTROL_LAST; ++control)
-        if (control_pressed(input, control,
-                            GAMEPAD_DEFAULT_DEADZONE_PERCENT)) return control;
+        if (control_pressed(input, control, deadzone_percent))
+            pressed |= 1u << (unsigned)control;
+    newly_pressed = input->capture_ready ? pressed & ~input->capture_pressed : 0u;
+    input->capture_pressed = pressed;
+    input->capture_ready = 1;
+    for (control = MM2_GAMEPAD_DPAD_UP;
+         control <= MM2_GAMEPAD_CONTROL_LAST; ++control)
+        if ((newly_pressed & (1u << (unsigned)control)) != 0u)
+            return control;
     return 0;
+}
+
+void mm2_gamepad_win32_set_capture_focus(int focused) {
+    /* Controls is a native Win32 window, outside SDL's gameplay window. */
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, focused ? "1" : "0");
 }
 
 static const wchar_t *button_label_name(SDL_GamepadButtonLabel label) {

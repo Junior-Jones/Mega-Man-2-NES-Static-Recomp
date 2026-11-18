@@ -10,6 +10,7 @@ import zipfile
 
 
 FILES = {
+    "recomplauncher.json": "recomplauncher.json",
     "README.txt": "README.txt",
     "VERSION.txt": "VERSION.txt",
     "RELEASE-NOTES.txt": "RELEASE-NOTES.txt",

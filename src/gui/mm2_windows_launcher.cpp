@@ -2,21 +2,56 @@
 #define _UNICODE
 #include <windows.h>
 #include <commdlg.h>
+#include <shellapi.h>
 extern "C" {
 #include "mm2_rom.h"
 }
 #include "mm2_windows_live.h"
+#include "mm2_windows_log.h"
 #include "mm2_gamepad_input_win32.h"
 #include <algorithm>
 #include <cstring>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #define MM2_COUNT(a) (sizeof(a)/sizeof((a)[0]))
 
 namespace {
 constexpr int MM2_SETTINGS_VERSION=2;
+constexpr int kInvalidArguments=2, kInvalidRom=3, kStartupFailure=4, kRuntimeFailure=5;
+
+struct LaunchOptions {
+    std::wstring game;
+    int widescreen=-1;
+};
+
+bool parse_launch_options(LaunchOptions &options){
+    int count=0;
+    wchar_t **arguments=CommandLineToArgvW(GetCommandLineW(),&count);
+    if(!arguments)return false;
+    bool valid=true;
+    for(int i=1;i<count&&valid;++i){
+        const std::wstring_view argument=arguments[i];
+        if(argument==L"--game"){
+            valid=options.game.empty()&&i+1<count;
+            if(valid){
+                const std::wstring_view path=arguments[++i];
+                valid=!path.empty()&&path.substr(0,2)!=L"--";
+                if(valid)options.game=path;
+            }
+        }else if(argument==L"--port-widescreen"){
+            options.widescreen=1;
+        }else if(argument==L"--no-port-widescreen"){
+            options.widescreen=0;
+        }else{
+            valid=false;
+        }
+    }
+    LocalFree(arguments);
+    return valid;
+}
 enum {
     CMD_BROWSE=100,CMD_RUN,CMD_PLAY,CMD_RESET,CMD_AUDIO,CMD_SETTINGS,CMD_KEYS,
     CMD_FULLSCREEN,CMD_WIDESCREEN,CMD_AUTORUN,CMD_SAVE,CMD_LOAD,CMD_SCREENSHOT,
@@ -27,14 +62,20 @@ enum {
 HINSTANCE g_instance{};HWND g_main{},g_video{},g_browse{},g_play{},g_reset{},g_audio{},g_settings_button{},g_keys{},g_fullscreen{},g_widescreen{},g_autorun{},g_status{};
 HWND g_settings_window{},g_audio_window{},g_bindings_window{},g_info_window{};HMENU g_menu{};std::wstring g_rom_path{};std::wstring g_rom_folder{};std::wstring g_ini_path{};
 MM2LiveSettings g_settings{};bool g_auto_run{},g_welcome_shown{},g_hidden{},g_fullscreen_active{};
+bool g_direct_play{};
+int g_exit_code{};
 DWORD g_saved_style{},g_saved_ex_style{};WINDOWPLACEMENT g_saved_placement{sizeof(WINDOWPLACEMENT)};
 
 /* Multiline read-only edit controls retain Tab themselves. Route dialog Tab
    explicitly so Welcome/About and every settings window have predictable
    Tab and Shift+Tab navigation, matching the mature Bubble Bobble frontend. */
 int route_dialog_keyboard(HWND dialog,MSG *message){
-    if(dialog&&message&&message->message==WM_KEYDOWN&&message->wParam==VK_ESCAPE){
-        SendMessageW(dialog,WM_CLOSE,0,0);return 1;
+    if(dialog&&message&&message->message==WM_KEYDOWN&&
+       (message->hwnd==dialog||IsChild(dialog,message->hwnd))){
+        if(dialog==g_bindings_window&&(message->hwnd==dialog||message->wParam==VK_ESCAPE)){
+            SendMessageW(dialog,WM_KEYDOWN,message->wParam,message->lParam);return 1;
+        }
+        if(message->wParam==VK_ESCAPE){SendMessageW(dialog,WM_CLOSE,0,0);return 1;}
     }
     if(!dialog||!message||message->message!=WM_KEYDOWN||message->wParam!=VK_TAB)
         return dialog&&IsDialogMessageW(dialog,message);
@@ -50,7 +91,6 @@ int route_dialog_keyboard(HWND dialog,MSG *message){
 std::wstring exe_directory(){wchar_t p[32768]={};DWORD n=GetModuleFileNameW(nullptr,p,(DWORD)MM2_COUNT(p));if(!n||n>=MM2_COUNT(p))return L".";std::wstring s(p,n);size_t slash=s.find_last_of(L"\\/");return slash==std::wstring::npos?L".":s.substr(0,slash);}
 bool path_is_directory(const std::wstring &path){DWORD attributes=GetFileAttributesW(path.c_str());return attributes!=INVALID_FILE_ATTRIBUTES&&(attributes&FILE_ATTRIBUTE_DIRECTORY)!=0;}
 std::wstring parent_directory(const std::wstring &path){size_t slash=path.find_last_of(L"\\/");return slash==std::wstring::npos?std::wstring{}:path.substr(0,slash);}
-std::string narrow(const std::wstring &s){if(s.empty())return {};int n=WideCharToMultiByte(CP_UTF8,0,s.c_str(),-1,nullptr,0,nullptr,nullptr);if(n<=0)return {};std::string r((size_t)n,'\0');WideCharToMultiByte(CP_UTF8,0,s.c_str(),-1,r.data(),n,nullptr,nullptr);r.pop_back();return r;}
 std::wstring widen(const char *s){if(!s||!*s)return {};int n=MultiByteToWideChar(CP_UTF8,0,s,-1,nullptr,0);if(n<=0)return {};std::wstring r((size_t)n,L'\0');MultiByteToWideChar(CP_UTF8,0,s,-1,r.data(),n);r.pop_back();return r;}
 void status(const wchar_t *text){if(!g_status)return;SetWindowTextW(g_status,text);NotifyWinEvent(EVENT_OBJECT_VALUECHANGE,g_status,OBJID_CLIENT,CHILDID_SELF);}
 void font(HWND w){if(w)SendMessageW(w,WM_SETFONT,(WPARAM)GetStockObject(DEFAULT_GUI_FONT),TRUE);}
@@ -59,22 +99,23 @@ bool frontend_key(UINT key){return key==VK_ESCAPE||(key>=VK_F1&&key<=VK_F8);}
 void defaults(){mm2_windows_live_settings_defaults(&g_settings);}
 void write_number(const wchar_t *section,const wchar_t *key,int value);
 void save_settings();
-void load_settings(){
+void load_settings(bool direct_play){
     defaults();g_ini_path=exe_directory()+L"\\settings.ini";g_rom_folder=exe_directory()+L"\\Rom";CreateDirectoryW(g_rom_folder.c_str(),nullptr);
     int settings_version=GetPrivateProfileIntW(L"General",L"SettingsVersion",0,g_ini_path.c_str());
     bool modern=settings_version>=1;
     bool settings_need_write=settings_version<MM2_SETTINGS_VERSION;wchar_t stored_rom_folder[32768]={};
     const wchar_t *general=modern?L"General":L"Frontend";
     g_settings.fullscreen=GetPrivateProfileIntW(general,modern?L"FullScreenOnPlay":L"FullScreen",0,g_ini_path.c_str());
+    if(direct_play&&!modern)
+        g_settings.fullscreen=GetPrivateProfileIntW(L"General",L"FullScreenOnPlay",g_settings.fullscreen,g_ini_path.c_str());
     g_settings.integer_scale=GetPrivateProfileIntW(general,L"IntegerScale",0,g_ini_path.c_str());
     g_settings.pause_on_focus_loss=GetPrivateProfileIntW(general,L"PauseOnFocusLoss",0,g_ini_path.c_str());
     g_auto_run=GetPrivateProfileIntW(general,modern?L"AutoRunOnLoad":L"AutoRun",0,g_ini_path.c_str())!=0;
     g_welcome_shown=GetPrivateProfileIntW(general,L"WelcomeShown",0,g_ini_path.c_str())!=0;
-    g_settings.wide_screen=GetPrivateProfileIntW(modern?L"Display":L"Frontend",modern?L"Widescreen":L"WideScreen",0,g_ini_path.c_str())!=0;
-    /* Wide Screen (v1) is new in 1.2.0 and is disabled by default. Upgrade an
-       older settings file exactly once; version 2 then preserves any choice
-       the user makes from the toolbar or Display menu. */
-    if(settings_version<MM2_SETTINGS_VERSION)g_settings.wide_screen=0;
+    if(!modern)
+        g_settings.wide_screen=GetPrivateProfileIntW(L"Frontend",L"WideScreen",g_settings.wide_screen,g_ini_path.c_str())!=0;
+    // RecompLauncher may write this choice before the INI is first initialized.
+    g_settings.wide_screen=GetPrivateProfileIntW(L"Display",L"Widescreen",g_settings.wide_screen,g_ini_path.c_str())!=0;
     g_settings.correct_aspect=GetPrivateProfileIntW(modern?L"Display":L"Frontend",L"CorrectAspect",1,g_ini_path.c_str());
     g_settings.vsync=GetPrivateProfileIntW(modern?L"Display":L"Frontend",L"VSync",0,g_ini_path.c_str());
     g_settings.audio_enabled=GetPrivateProfileIntW(L"Audio",L"Enabled",1,g_ini_path.c_str());
@@ -119,10 +160,20 @@ void save_settings(){
 }
 
 bool validate_rom(const std::wstring &path,bool report){
-    MM2Rom rom{};char error[256]={},reason[256]={};std::string p=narrow(path);
-    if(!mm2_rom_load(p.c_str(),&rom,error,sizeof(error))){if(report)MessageBoxW(g_main,widen(error).c_str(),L"Mega Man 2 ROM",MB_OK|MB_ICONERROR);return false;}
+    MM2Rom rom{};char error[256]={},reason[256]={};
+    if(!mm2_rom_load_wide(path.c_str(),&rom,error,sizeof(error))){
+        const std::wstring message=L"ROM load failed. "+widen(error);
+        mm2_windows_log_write(message.c_str());
+        if(report)MessageBoxW(g_main,message.c_str(),L"Mega Man 2 ROM",MB_OK|MB_ICONERROR);
+        return false;
+    }
     bool ok=mm2_rom_is_expected(&rom,reason,sizeof(reason))!=0;mm2_rom_free(&rom);
-    if(!ok){if(report)MessageBoxW(g_main,widen(reason).c_str(),L"Mega Man 2 ROM",MB_OK|MB_ICONERROR);return false;}
+    if(!ok){
+        const std::wstring message=L"ROM validation failed. "+widen(reason);
+        mm2_windows_log_write(message.c_str());
+        if(report)MessageBoxW(g_main,message.c_str(),L"Mega Man 2 ROM",MB_OK|MB_ICONERROR);
+        return false;
+    }
     g_rom_path=path;status(L"Exact Mega Man 2 (USA) ROM ready. Select Run or press F7.");return true;
 }
 bool path_is_file(const std::wstring &path){DWORD attributes=GetFileAttributesW(path.c_str());return attributes!=INVALID_FILE_ATTRIBUTES&&!(attributes&FILE_ATTRIBUTE_DIRECTORY);}
@@ -160,7 +211,7 @@ void show_information(HWND owner,const wchar_t *title,const wchar_t *body,int wi
     if(!g_info_window){delete d;return;}ShowWindow(g_info_window,SW_SHOWNORMAL);BringWindowToTop(g_info_window);SetForegroundWindow(g_info_window);
 }
 void welcome(HWND owner){if(g_info_window)DestroyWindow(g_info_window);show_information(owner,L"Welcome to Mega Man 2 (NES)",
-    L"Welcome to Mega Man 2 (NES) Static Recomp 1.2.1\r\n\r\n"
+    L"Welcome to Mega Man 2 (NES) Static Recomp 1.2.2\r\n\r\n"
     L"Frontend shortcuts\r\n"
     L"Escape - Switch between the game and Launcher\r\n"
     L"F1 - Welcome and shortcut guide\r\n"
@@ -212,17 +263,167 @@ void open_audio(HWND owner){if(g_audio_window){ShowWindow(g_audio_window,SW_SHOW
 
 const wchar_t *action_name(unsigned a){static const wchar_t *names[8]={L"Up",L"Down",L"Left",L"Right",L"B",L"A",L"Start",L"Select"};return a<8?names[a]:L"Unknown";}
 std::wstring key_name(UINT key){switch(key){case VK_UP:return L"Up Arrow";case VK_DOWN:return L"Down Arrow";case VK_LEFT:return L"Left Arrow";case VK_RIGHT:return L"Right Arrow";case VK_TAB:return L"Tab";case VK_SHIFT:return L"Shift";default:break;}UINT scan=MapVirtualKeyW(key,MAPVK_VK_TO_VSC);wchar_t name[64]={};if(GetKeyNameTextW((LONG)(scan<<16),name,(int)MM2_COUNT(name))>0)return name;return L"Key "+std::to_wstring(key);}
-struct BindData{HWND button[MM2_NES_BINDING_COUNT]{},source{},deadzone{};UINT pending[MM2_NES_BINDING_COUNT]{};int action{-1};};
-void binding_text(BindData &d,unsigned action){if(action>=MM2_NES_BINDING_COUNT)return;std::wstring text=std::wstring(action_name(action))+L": "+key_name(d.pending[action]);SetWindowTextW(d.button[action],text.c_str());}
-LRESULT CALLBACK BindProc(HWND w,UINT m,WPARAM wp,LPARAM lp){static BindData d{};constexpr int base=5000;
-    if(m==WM_CREATE){d={};std::memcpy(d.pending,g_settings.bindings[0],sizeof(d.pending));CreateWindowW(L"STATIC",L"Input source:",WS_CHILD|WS_VISIBLE,18,14,90,22,w,nullptr,g_instance,nullptr);d.source=CreateWindowW(L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,110,10,205,120,w,(HMENU)4900,g_instance,nullptr);for(const wchar_t *s:{L"Keyboard",L"Gamepad",L"Keyboard + gamepad"})SendMessageW(d.source,CB_ADDSTRING,0,(LPARAM)s);SendMessageW(d.source,CB_SETCURSEL,g_settings.input_source,0);
-        CreateWindowW(L"STATIC",L"Deadzone:",WS_CHILD|WS_VISIBLE,338,14,80,22,w,nullptr,g_instance,nullptr);d.deadzone=CreateWindowW(L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,426,10,110,120,w,(HMENU)4901,g_instance,nullptr);for(const wchar_t *s:{L"20%",L"35%",L"50%",L"65%"})SendMessageW(d.deadzone,CB_ADDSTRING,0,(LPARAM)s);int dead_index=g_settings.gamepad_deadzone_percent<=20?0:g_settings.gamepad_deadzone_percent<=35?1:g_settings.gamepad_deadzone_percent<=50?2:3;SendMessageW(d.deadzone,CB_SETCURSEL,dead_index,0);
-        CreateWindowW(L"STATIC",L"Gamepad: D-pad or left stick; west = B; south = A; Start = Start; Back = Select. Hot-plugging is supported.",WS_CHILD|WS_VISIBLE,18,48,518,42,w,nullptr,g_instance,nullptr);CreateWindowW(L"STATIC",L"Keyboard controls",WS_CHILD|WS_VISIBLE,18,96,340,24,w,nullptr,g_instance,nullptr);
-        for(unsigned action=0;action<MM2_NES_BINDING_COUNT;++action){int id=base+(int)action;d.button[action]=CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP,18,126+(int)action*38,518,30,w,(HMENU)(INT_PTR)id,g_instance,nullptr);binding_text(d,action);}
-        CreateWindowW(L"STATIC",L"Select a keyboard control, then press its new key. Escape cancels capture. Duplicate keys are swapped; Launcher shortcuts are reserved.",WS_CHILD|WS_VISIBLE,18,438,518,42,w,nullptr,g_instance,nullptr);CreateWindowW(L"BUTTON",L"OK",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,308,492,105,32,w,(HMENU)IDOK,g_instance,nullptr);CreateWindowW(L"BUTTON",L"Cancel",WS_CHILD|WS_VISIBLE|WS_TABSTOP,431,492,105,32,w,(HMENU)IDCANCEL,g_instance,nullptr);SetFocus(d.button[0]);return 0;}
-    if(m==WM_COMMAND){int id=LOWORD(wp);if(id>=base&&id<base+MM2_NES_BINDING_COUNT){d.action=id-base;SetWindowTextW(d.button[d.action],L"Press a key...");SetFocus(w);return 0;}if(id==IDOK){static const int deadzones[4]={20,35,50,65};int source=(int)SendMessageW(d.source,CB_GETCURSEL,0,0),deadzone=(int)SendMessageW(d.deadzone,CB_GETCURSEL,0,0);if(source>=MM2_INPUT_KEYBOARD&&source<=MM2_INPUT_COMBINED)g_settings.input_source=source;if(deadzone>=0&&deadzone<4)g_settings.gamepad_deadzone_percent=deadzones[deadzone];std::memcpy(g_settings.bindings[0],d.pending,sizeof(d.pending));save_settings();mm2_windows_live_set_next_settings(&g_settings);status(L"Controls saved. They apply when gameplay is next started.");DestroyWindow(w);return 0;}if(id==IDCANCEL){DestroyWindow(w);return 0;}}
-    if(m==WM_KEYDOWN&&d.action>=0){unsigned action=(unsigned)d.action;UINT key=(UINT)wp;if(key==VK_ESCAPE){binding_text(d,action);d.action=-1;return 0;}if(frontend_key(key)){MessageBoxW(w,L"F1 through F8 are reserved for Launcher shortcuts. Choose another controller key.",L"Reserved shortcut key",MB_OK|MB_ICONINFORMATION);SetWindowTextW(d.button[action],L"Press a key...");return 0;}UINT old=d.pending[action];for(unsigned other=0;other<MM2_NES_BINDING_COUNT;++other)if(other!=action&&d.pending[other]==key){d.pending[other]=old;binding_text(d,other);}d.pending[action]=key;binding_text(d,action);d.action=-1;SetFocus(d.button[action]);return 0;}
-    if((m==WM_KEYDOWN&&wp==VK_ESCAPE)||m==WM_CLOSE){DestroyWindow(w);return 0;}if(m==WM_DESTROY&&w==g_bindings_window){g_bindings_window=nullptr;return 0;}return DefWindowProcW(w,m,wp,lp);
+constexpr int keyboard_binding_base=5000;
+constexpr int gamepad_binding_base=5100;
+constexpr UINT_PTR gamepad_capture_timer=1;
+constexpr int binding_deadzones[]={20,35,50,65};
+
+struct BindData {
+    HWND keyboard[MM2_NES_BINDING_COUNT]{},gamepad[MM2_NES_BINDING_COUNT]{};
+    HWND source{},deadzone{},device{};
+    UINT keys[MM2_NES_BINDING_COUNT]{};
+    int controls[MM2_GAMEPAD_BINDING_COUNT]{};
+    MM2GamepadInputWin32 input{};
+    SDL_JoystickID device_id{};
+    int action{-1};
+    bool capture_gamepad{};
+};
+
+int binding_deadzone(const BindData &d){
+    const auto index=SendMessageW(d.deadzone,CB_GETCURSEL,0,0);
+    return index>=0&&index<(LRESULT)MM2_COUNT(binding_deadzones)
+        ? binding_deadzones[index] : g_settings.gamepad_deadzone_percent;
+}
+
+void binding_text(const BindData &d,unsigned action,bool gamepad){
+    std::wstring text=std::wstring(action_name(action))+L": ";
+    if(gamepad){
+        wchar_t name[128]{};
+        mm2_gamepad_win32_control_display_name(&d.input,d.controls[action],name,MM2_COUNT(name));
+        text+=name;
+    }else{
+        text+=key_name(d.keys[action]);
+    }
+    SetWindowTextW(gamepad?d.gamepad[action]:d.keyboard[action],text.c_str());
+}
+
+void finish_binding(BindData &d,bool restore_focus){
+    if(d.action<0)return;
+    const auto action=(unsigned)d.action;
+    binding_text(d,action,d.capture_gamepad);
+    d.action=-1;
+    if(restore_focus)SetFocus(d.capture_gamepad?d.gamepad[action]:d.keyboard[action]);
+}
+
+template<typename Control>
+void apply_binding(BindData &d,Control (&bindings)[MM2_NES_BINDING_COUNT],Control control){
+    const auto action=(unsigned)d.action;
+    for(unsigned other=0;other<MM2_NES_BINDING_COUNT;++other){
+        if(other!=action&&bindings[other]==control){
+            bindings[other]=bindings[action];
+            binding_text(d,other,d.capture_gamepad);
+        }
+    }
+    bindings[action]=control;
+    finish_binding(d,true);
+}
+
+void poll_binding_gamepad(BindData &d){
+    const int control=mm2_gamepad_win32_capture_control(&d.input,binding_deadzone(d));
+    const SDL_JoystickID device=d.input.handle?SDL_GetGamepadID(d.input.handle):0;
+    if(device!=d.device_id){
+        d.device_id=device;
+        SetWindowTextW(d.device,mm2_gamepad_win32_name(&d.input));
+        for(unsigned action=0;action<MM2_NES_BINDING_COUNT;++action)
+            if(!d.capture_gamepad||(int)action!=d.action)binding_text(d,action,true);
+    }
+    if(control&&d.action>=0&&d.capture_gamepad)apply_binding(d,d.controls,control);
+}
+
+LRESULT CALLBACK BindProc(HWND w,UINT m,WPARAM wp,LPARAM lp){
+    static BindData d{};
+    if(m==WM_CREATE){
+        d={};
+        std::memcpy(d.keys,g_settings.bindings[0],sizeof(d.keys));
+        std::memcpy(d.controls,g_settings.gamepad_bindings,sizeof(d.controls));
+        CreateWindowW(L"STATIC",L"Input source:",WS_CHILD|WS_VISIBLE,18,14,90,22,w,nullptr,g_instance,nullptr);
+        d.source=CreateWindowW(L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,110,10,205,120,w,(HMENU)4900,g_instance,nullptr);
+        for(const wchar_t *s:{L"Keyboard",L"Gamepad",L"Keyboard + gamepad"})SendMessageW(d.source,CB_ADDSTRING,0,(LPARAM)s);
+        SendMessageW(d.source,CB_SETCURSEL,g_settings.input_source,0);
+        CreateWindowW(L"STATIC",L"Deadzone:",WS_CHILD|WS_VISIBLE,338,14,80,22,w,nullptr,g_instance,nullptr);
+        d.deadzone=CreateWindowW(L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST,426,10,110,120,w,(HMENU)4901,g_instance,nullptr);
+        for(const wchar_t *s:{L"20%",L"35%",L"50%",L"65%"})SendMessageW(d.deadzone,CB_ADDSTRING,0,(LPARAM)s);
+        const int deadzone=g_settings.gamepad_deadzone_percent;
+        const int dead_index=deadzone<=20?0:deadzone<=35?1:deadzone<=50?2:3;
+        SendMessageW(d.deadzone,CB_SETCURSEL,dead_index,0);
+
+        const auto database=exe_directory()+L"\\gamecontrollerdb.txt";
+        mm2_gamepad_win32_initialize(&d.input,database.c_str(),MM2_GAMEPAD_CAPTURE_PLAYER,nullptr);
+        d.device=CreateWindowW(L"STATIC",mm2_gamepad_win32_name(&d.input),WS_CHILD|WS_VISIBLE,286,72,250,22,w,nullptr,g_instance,nullptr);
+        CreateWindowW(L"STATIC",L"Keyboard",WS_CHILD|WS_VISIBLE,18,48,250,22,w,nullptr,g_instance,nullptr);
+        CreateWindowW(L"STATIC",L"Gamepad",WS_CHILD|WS_VISIBLE,286,48,250,22,w,nullptr,g_instance,nullptr);
+        for(unsigned action=0;action<MM2_NES_BINDING_COUNT;++action){
+            const int y=100+(int)action*38;
+            d.keyboard[action]=CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP,18,y,250,30,w,(HMENU)(INT_PTR)(keyboard_binding_base+action),g_instance,nullptr);
+            d.gamepad[action]=CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP,286,y,250,30,w,(HMENU)(INT_PTR)(gamepad_binding_base+action),g_instance,nullptr);
+            binding_text(d,action,false);
+            binding_text(d,action,true);
+        }
+        CreateWindowW(L"STATIC",L"Choose an action, then press a key or gamepad control. Escape cancels capture. Assigning an existing control swaps the two bindings.",WS_CHILD|WS_VISIBLE,18,414,518,48,w,nullptr,g_instance,nullptr);
+        CreateWindowW(L"BUTTON",L"OK",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,308,474,105,32,w,(HMENU)IDOK,g_instance,nullptr);
+        CreateWindowW(L"BUTTON",L"Cancel",WS_CHILD|WS_VISIBLE|WS_TABSTOP,431,474,105,32,w,(HMENU)IDCANCEL,g_instance,nullptr);
+        SetTimer(w,gamepad_capture_timer,30,nullptr);
+        SetFocus(d.keyboard[0]);
+        return 0;
+    }
+    if(m==WM_TIMER&&wp==gamepad_capture_timer){
+        if(GetActiveWindow()==w)poll_binding_gamepad(d);
+        return 0;
+    }
+    if(m==WM_ACTIVATE){
+        const bool focused=LOWORD(wp)!=WA_INACTIVE&&HIWORD(wp)==0;
+        mm2_gamepad_win32_set_capture_focus(focused);
+        if(!focused)finish_binding(d,false);
+    }
+    if(m==WM_COMMAND){
+        const int id=LOWORD(wp);
+        const bool keyboard=id>=keyboard_binding_base&&id<keyboard_binding_base+MM2_NES_BINDING_COUNT;
+        const bool gamepad=id>=gamepad_binding_base&&id<gamepad_binding_base+MM2_NES_BINDING_COUNT;
+        if(keyboard||gamepad){
+            finish_binding(d,false);
+            if(gamepad)poll_binding_gamepad(d);
+            d.capture_gamepad=gamepad;
+            d.action=id-(gamepad?gamepad_binding_base:keyboard_binding_base);
+            SetWindowTextW(gamepad?d.gamepad[d.action]:d.keyboard[d.action],
+                gamepad?L"Press a gamepad control...":L"Press a key...");
+            SetFocus(w);
+            return 0;
+        }
+        if(id==IDOK){
+            const auto source=SendMessageW(d.source,CB_GETCURSEL,0,0);
+            if(source>=MM2_INPUT_KEYBOARD&&source<=MM2_INPUT_COMBINED)g_settings.input_source=(int)source;
+            g_settings.gamepad_deadzone_percent=binding_deadzone(d);
+            std::memcpy(g_settings.bindings[0],d.keys,sizeof(d.keys));
+            std::memcpy(g_settings.gamepad_bindings,d.controls,sizeof(d.controls));
+            save_settings();
+            mm2_windows_live_set_next_settings(&g_settings);
+            status(L"Controls saved. They apply when gameplay is next started.");
+            DestroyWindow(w);
+            return 0;
+        }
+        if(id==IDCANCEL){DestroyWindow(w);return 0;}
+    }
+    if(m==WM_KEYDOWN&&d.action>=0){
+        const auto key=(UINT)wp;
+        if(key==VK_ESCAPE)finish_binding(d,true);
+        else if(!d.capture_gamepad){
+            if(frontend_key(key)){
+                SetWindowTextW(d.keyboard[d.action],L"F1-F8 are reserved. Press another key.");
+            }else{
+                apply_binding(d,d.keys,key);
+            }
+        }
+        return 0;
+    }
+    if((m==WM_KEYDOWN&&wp==VK_ESCAPE)||m==WM_CLOSE){DestroyWindow(w);return 0;}
+    if(m==WM_DESTROY){
+        KillTimer(w,gamepad_capture_timer);
+        mm2_gamepad_win32_set_capture_focus(false);
+        mm2_gamepad_win32_shutdown(&d.input);
+        if(w==g_bindings_window)g_bindings_window=nullptr;
+        return 0;
+    }
+    return DefWindowProcW(w,m,wp,lp);
 }
 void open_bindings(HWND owner){if(g_bindings_window){ShowWindow(g_bindings_window,SW_SHOW);SetForegroundWindow(g_bindings_window);return;}WNDCLASSW wc{};wc.lpfnWndProc=BindProc;wc.hInstance=g_instance;wc.lpszClassName=L"MM2ModernBindings";wc.hCursor=LoadCursor(nullptr,IDC_ARROW);wc.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);RegisterClassW(&wc);g_bindings_window=CreateWindowExW(WS_EX_CONTROLPARENT,wc.lpszClassName,L"Mega Man 2 Controls",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_VISIBLE,CW_USEDEFAULT,CW_USEDEFAULT,578,585,owner,nullptr,g_instance,nullptr);}
 
@@ -234,7 +435,26 @@ void update(){bool running=mm2_windows_live_is_running();EnableWindow(g_browse,!
 void launcher_view(HWND w){if(!g_hidden)return;if(g_fullscreen_active){SetWindowLongPtrW(w,GWL_STYLE,g_saved_style);SetWindowLongPtrW(w,GWL_EXSTYLE,g_saved_ex_style);SetWindowPos(w,nullptr,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);g_fullscreen_active=false;}SetWindowPlacement(w,&g_saved_placement);SetMenu(w,g_menu);g_hidden=false;visible(true);SetWindowTextW(w,L"Launcher");layout(w);DrawMenuBar(w);InvalidateRect(w,nullptr,TRUE);}
 void game_view(HWND w){if(g_hidden)return;g_saved_style=(DWORD)GetWindowLongPtrW(w,GWL_STYLE);g_saved_ex_style=(DWORD)GetWindowLongPtrW(w,GWL_EXSTYLE);g_saved_placement.length=sizeof(g_saved_placement);GetWindowPlacement(w,&g_saved_placement);g_hidden=true;visible(false);SetMenu(w,nullptr);
     if(g_settings.fullscreen){MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromWindow(w,MONITOR_DEFAULTTONEAREST),&mi);g_fullscreen_active=true;SetWindowLongPtrW(w,GWL_STYLE,g_saved_style&~(DWORD)WS_OVERLAPPEDWINDOW);SetWindowLongPtrW(w,GWL_EXSTYLE,g_saved_ex_style&~(DWORD)WS_EX_WINDOWEDGE);SetWindowPos(w,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_FRAMECHANGED|SWP_SHOWWINDOW);}else{g_fullscreen_active=false;ShowWindow(w,SW_MAXIMIZE);}SetWindowTextW(w,L"Mega Man 2 (NES)");layout(w);InvalidateRect(w,nullptr,TRUE);SetFocus(w);}
-bool start(HWND w){if(g_rom_path.empty()){MessageBoxW(w,L"Place Mega Man 2 (USA).nes in the Rom folder or select Browse ROM.",L"Mega Man 2 ROM",MB_OK|MB_ICONINFORMATION);return false;}wchar_t error[512]={};mm2_windows_live_set_next_settings(&g_settings);if(!mm2_windows_live_start(w,g_rom_path.c_str(),error,MM2_COUNT(error))){MessageBoxW(w,error[0]?error:L"The Mega Man 2 static core could not start.",L"Play",MB_OK|MB_ICONERROR);return false;}layout(w);update();status(L"Mega Man 2 is running at native NTSC timing. Press Escape to return to Launcher.");game_view(w);return true;}
+bool start(HWND w,bool report=true){
+    if(g_rom_path.empty()){
+        if(report)MessageBoxW(w,L"Place Mega Man 2 (USA).nes in the Rom folder or select Browse ROM.",L"Mega Man 2 ROM",MB_OK|MB_ICONINFORMATION);
+        return false;
+    }
+    wchar_t error[512]={};
+    mm2_windows_live_set_next_settings(&g_settings);
+    if(!mm2_windows_live_start(w,g_rom_path.c_str(),error,MM2_COUNT(error),g_direct_play)){
+        const wchar_t *message=error[0]?error:L"The Mega Man 2 static core could not start.";
+        mm2_windows_log_write(message);
+        if(report)MessageBoxW(w,message,L"Play",MB_OK|MB_ICONERROR);
+        return false;
+    }
+    wchar_t mode[128]{};
+    swprintf_s(mode,MM2_COUNT(mode),L"Gameplay started. Full screen=%d, Wide Screen=%d.",
+        g_settings.fullscreen!=0,g_settings.wide_screen!=0);
+    mm2_windows_log_write(mode);
+    layout(w);update();status(L"Mega Man 2 is running at native NTSC timing. Press Escape to return to Launcher.");game_view(w);
+    return true;
+}
 void toggle_play(HWND w){if(!mm2_windows_live_is_running())return;if(mm2_windows_live_is_paused()){mm2_windows_live_toggle_pause();status(L"Mega Man 2 resumed. Press Escape to return to Launcher.");update();game_view(w);}else{mm2_windows_live_toggle_pause();launcher_view(w);status(L"Paused. Choose Play or press Escape to continue.");update();SetFocus(g_play);NotifyWinEvent(EVENT_OBJECT_FOCUS,g_play,OBJID_CLIENT,CHILDID_SELF);}}
 void reset_game(HWND w){if(mm2_windows_live_is_running()){mm2_windows_live_stop();start(w);status(L"Mega Man 2 reset from frame 0.");}}
 
@@ -245,13 +465,59 @@ LRESULT CALLBACK MainProc(HWND w,UINT m,WPARAM wp,LPARAM lp){switch(m){
     case WM_KEYDOWN:if(wp==VK_ESCAPE){if((lp&(1L<<30))==0)toggle_play(w);return 0;}if(wp==VK_F1){if(g_hidden)toggle_play(w);welcome(w);return 0;}if(wp==VK_F2){SendMessageW(w,WM_COMMAND,CMD_SAVE,0);return 0;}if(wp==VK_F3){SendMessageW(w,WM_COMMAND,CMD_LOAD,0);return 0;}if(wp==VK_F4){if(g_hidden)toggle_play(w);open_settings(w);return 0;}if(wp==VK_F5){if(g_hidden)toggle_play(w);open_bindings(w);return 0;}if(wp==VK_F6){if(g_hidden)toggle_play(w);open_audio(w);return 0;}if(wp==VK_F7){if(!mm2_windows_live_is_running())SendMessageW(w,WM_COMMAND,CMD_RUN,0);return 0;}if(wp==VK_F8){SendMessageW(w,WM_COMMAND,CMD_SCREENSHOT,0);return 0;}if(mm2_windows_live_is_running()&&!mm2_windows_live_is_paused()){mm2_windows_live_key_event(WM_KEYDOWN,wp);return 0;}break;
     case WM_KEYUP:if(mm2_windows_live_is_running()&&!mm2_windows_live_is_paused()){mm2_windows_live_key_event(WM_KEYUP,wp);return 0;}break;
     case WM_KILLFOCUS:if(g_settings.pause_on_focus_loss&&g_hidden&&mm2_windows_live_is_running()&&!mm2_windows_live_is_paused())toggle_play(w);return 0;
-    case WM_CLOSE:mm2_windows_live_stop();DestroyWindow(w);return 0;case WM_DESTROY:PostQuitMessage(0);return 0;default:break;}return DefWindowProcW(w,m,wp,lp);}
+    case MM2_WM_RUNTIME_FAILURE:g_exit_code=kRuntimeFailure;SendMessageW(w,WM_CLOSE,0,0);return 0;
+    case WM_CLOSE:mm2_windows_live_stop();DestroyWindow(w);return 0;case WM_DESTROY:PostQuitMessage(g_exit_code);return 0;default:break;}return DefWindowProcW(w,m,wp,lp);}
 
 HMENU make_menu(){HMENU bar=CreateMenu(),file=CreatePopupMenu(),settings=CreatePopupMenu();AppendMenuW(file,MF_STRING,CMD_BROWSE,L"&Browse ROM...");AppendMenuW(file,MF_STRING,CMD_RUN,L"&Run\tF7");AppendMenuW(file,MF_STRING,CMD_PLAY,L"&Play\tEscape");AppendMenuW(file,MF_STRING,CMD_RESET,L"&Reset ROM");AppendMenuW(file,MF_SEPARATOR,0,nullptr);AppendMenuW(file,MF_STRING,CMD_SAVE,L"Save Snapshot\tF2");AppendMenuW(file,MF_STRING,CMD_LOAD,L"Load Snapshot\tF3");AppendMenuW(file,MF_STRING,CMD_SCREENSHOT,L"Capture Game Window\tF8");AppendMenuW(file,MF_SEPARATOR,0,nullptr);AppendMenuW(file,MF_STRING,CMD_EXIT,L"E&xit\tAlt+F4");AppendMenuW(settings,MF_STRING,CMD_SETTINGS,L"&Settings...\tF4");AppendMenuW(settings,MF_STRING,CMD_KEYS,L"&Controls...\tF5");AppendMenuW(settings,MF_STRING,CMD_AUDIO,L"&Audio Settings...\tF6");AppendMenuW(settings,MF_SEPARATOR,0,nullptr);AppendMenuW(settings,MF_STRING,CMD_FULLSCREEN,L"Use &Full Screen When Playing");AppendMenuW(settings,MF_STRING,CMD_WIDESCREEN,L"Use &Wide Screen (v1) During Supported Gameplay");AppendMenuW(settings,MF_STRING,CMD_AUTORUN,L"&Auto-Run at Startup");AppendMenuW(settings,MF_SEPARATOR,0,nullptr);AppendMenuW(settings,MF_STRING,CMD_ABOUT,L"&About");AppendMenuW(bar,MF_POPUP,(UINT_PTR)file,L"&File");AppendMenuW(bar,MF_POPUP,(UINT_PTR)settings,L"&Settings");return bar;}
 }
 
-int WINAPI wWinMain(HINSTANCE h,HINSTANCE,LPWSTR,int){g_instance=h;load_settings();g_menu=make_menu();WNDCLASSW wc{};wc.lpfnWndProc=MainProc;wc.hInstance=h;wc.lpszClassName=L"MM2ModernLauncher";wc.hCursor=LoadCursor(nullptr,IDC_ARROW);wc.hIcon=LoadIcon(nullptr,IDI_APPLICATION);wc.hbrBackground=(HBRUSH)GetStockObject(BLACK_BRUSH);if(!RegisterClassW(&wc)&&GetLastError()!=ERROR_CLASS_ALREADY_EXISTS){MessageBoxW(nullptr,L"Windows could not register the Launcher window class.",L"Launcher startup error",MB_OK|MB_ICONERROR);return 1;}HWND w=CreateWindowExW(WS_EX_CONTROLPARENT,wc.lpszClassName,L"Launcher",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,1024,820,nullptr,g_menu,h,nullptr);if(!w)return 1;bool found=try_default_rom();update();ShowWindow(w,SW_SHOWNORMAL);UpdateWindow(w);BringWindowToTop(w);SetForegroundWindow(w);if(!g_welcome_shown){g_welcome_shown=true;save_settings();welcome(w);}if(found&&g_auto_run)PostMessageW(w,WM_COMMAND,CMD_RUN,0);
+int WINAPI wWinMain(HINSTANCE h,HINSTANCE,LPWSTR,int){
+    g_instance=h;
+    mm2_windows_log_open(exe_directory().c_str());
+    mm2_windows_log_write(L"Mega Man 2 launcher started.");
+    LaunchOptions options;
+    if(!parse_launch_options(options)){
+        mm2_windows_log_write(L"Invalid launch options. Use --game <ROM path>, --port-widescreen or --no-port-widescreen.");
+        return kInvalidArguments;
+    }
+    const bool direct_play=!options.game.empty();
+    g_direct_play=direct_play;
+    if(direct_play&&!validate_rom(options.game,false))return kInvalidRom;
+    load_settings(direct_play);
+    if(options.widescreen>=0)g_settings.wide_screen=options.widescreen;
+    g_menu=make_menu();
+    WNDCLASSW wc{};
+    wc.lpfnWndProc=MainProc;
+    wc.hInstance=h;
+    wc.lpszClassName=L"MM2ModernLauncher";
+    wc.hCursor=LoadCursor(nullptr,IDC_ARROW);
+    wc.hIcon=LoadIcon(nullptr,IDI_APPLICATION);
+    wc.hbrBackground=(HBRUSH)GetStockObject(BLACK_BRUSH);
+    if(!RegisterClassW(&wc)&&GetLastError()!=ERROR_CLASS_ALREADY_EXISTS){
+        const wchar_t *message=L"Windows could not register the Launcher window class.";
+        mm2_windows_log_write(message);
+        if(!direct_play)MessageBoxW(nullptr,message,L"Launcher startup error",MB_OK|MB_ICONERROR);
+        return kStartupFailure;
+    }
+    HWND w=CreateWindowExW(WS_EX_CONTROLPARENT,wc.lpszClassName,L"Launcher",WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT,CW_USEDEFAULT,1024,820,nullptr,g_menu,h,nullptr);
+    if(!w){
+        mm2_windows_log_write(L"Windows could not create the Launcher window.");
+        return kStartupFailure;
+    }
+    if(direct_play){
+        if(!start(w,false)){
+            DestroyWindow(w);
+            return kStartupFailure;
+        }
+    }else{
+        bool found=try_default_rom();
+        update();ShowWindow(w,SW_SHOWNORMAL);UpdateWindow(w);BringWindowToTop(w);SetForegroundWindow(w);
+        if(!g_welcome_shown){g_welcome_shown=true;save_settings();welcome(w);}
+        if(found&&g_auto_run)PostMessageW(w,WM_COMMAND,CMD_RUN,0);
+    }
     MSG msg{};bool running=true;while(running){HANDLE timer=mm2_windows_live_frame_timer();DWORD count=timer?1u:0u;DWORD result=MsgWaitForMultipleObjectsEx(count,timer?&timer:nullptr,INFINITE,QS_ALLINPUT,MWMO_INPUTAVAILABLE);bool timer_ready=timer&&result==WAIT_OBJECT_0;if(result==WAIT_FAILED)break;
         while(PeekMessageW(&msg,nullptr,0,0,PM_REMOVE)){if(msg.message==WM_QUIT){running=false;break;}if(g_info_window&&IsDialogMessageW(g_info_window,&msg))continue;if(g_settings_window&&IsDialogMessageW(g_settings_window,&msg))continue;if(g_audio_window&&IsDialogMessageW(g_audio_window,&msg))continue;if(g_bindings_window&&IsDialogMessageW(g_bindings_window,&msg))continue;bool root=msg.message==WM_KEYDOWN&&frontend_key((UINT)msg.wParam);if(root){SendMessageW(w,msg.message,msg.wParam,msg.lParam);continue;}if(g_hidden||!IsDialogMessageW(w,&msg)){TranslateMessage(&msg);DispatchMessageW(&msg);}}
         HANDLE current=mm2_windows_live_frame_timer();if(timer_ready&&current==timer)mm2_windows_live_service_frame_timer();}
+    mm2_windows_log_write(L"Mega Man 2 launcher stopped.");
     return (int)msg.wParam;}

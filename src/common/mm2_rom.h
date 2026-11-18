@@ -26,6 +26,9 @@ typedef struct MM2Rom {
     uint32_t payload_crc32;
 } MM2Rom;
 int mm2_rom_load(const char *path, MM2Rom *rom, char *error, size_t error_cap);
+#ifdef _WIN32
+int mm2_rom_load_wide(const wchar_t *path, MM2Rom *rom, char *error, size_t error_cap);
+#endif
 void mm2_rom_free(MM2Rom *rom);
 int mm2_rom_is_expected(const MM2Rom *rom, char *reason, size_t reason_cap);
 int mm2_rom_write_json(const MM2Rom *rom, const char *path);

@@ -1,10 +1,17 @@
 Mega Man 2 NES Static Recomp
-Version: 1.2.1
+Version: 1.2.2
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: native Win32 launcher; statically linked SDL3 video, audio and gamepad input
 Audio: native NES APU PCM at 44,100 Hz through a statically linked SDL3 audio stream
 ROM: Mega Man 2 (USA) .nes required externally and not included
+
+Changes in 1.2.2:
+- Added gamepad remapping to the Windows Controls dialog (F5), including DualSense and DualSense Edge.
+- Saved gamepad changes to the existing settings.ini alongside keyboard bindings.
+- Added headless virtual-controller regression coverage.
+- Enabled Wide Screen (v1) by default when no display preference has been saved.
+- Added RecompLauncher support for direct ROM launch, display settings, snapshots and logs.
 
 Changes in 1.2.1:
 - Fixed both widescreen margins blinking during horizontal stage scrolling.

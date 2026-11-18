@@ -1,5 +1,5 @@
 Mega Man 2 NES Static Recomp
-Wide Screen (v1) - Version 1.2.1
+Wide Screen (v1) - Version 1.2.2
 
 Purpose
 Wide Screen (v1) expands eligible horizontal gameplay with real NES stage
@@ -16,9 +16,8 @@ Final geometry
 - Eligible horizontal gameplay renders real stage data into both margins.
 - Title screens, menus, vertical rooms, transitions, boss approaches, and boss
   rooms retain the native 4:3 image centered inside the wide canvas.
-- Wide Screen (v1) is disabled by default for fresh settings and when upgrading
-  an older settings file. After that one-time migration, an explicit user
-  choice to enable or disable it is saved normally.
+- Wide Screen (v1) is enabled when no preference has been saved. The launcher
+  preserves existing choices, including an explicit Off setting.
 
 Step-by-step implementation
 
