@@ -89,6 +89,7 @@ int main(void) {
             core.ppu_mask = 0x08u;
             core.ram[0x29u] = 0x0Eu;
             core.ram[0x6C0u] = 16u;
+            core.ram[0x1Bu] = 2u; /* Two updates queued for the next vblank. */
             core.wide_layout_mode = 1u;
             core.wide_screen_enabled = 1u;
             core.ppu_scanline = 239u;
@@ -97,18 +98,23 @@ int main(void) {
             if (core.ppu_scanline != 240u || core.ppu_dot != 0u ||
                 core.framebuffer[0] != 0x21u)
                 result = fail("visible frame was not published at scanline 240");
+            else if (!ppu_presentation_info(&core, 1, &info) ||
+                     info.mode != MM2_PRESENTATION_WIDE_GAMEPLAY)
+                result = fail("queued scroll update hid the widescreen margins");
         }
         if (!result) {
             memset(core.chr_ram, 0, sizeof(core.chr_ram));
             memset(core.ciram, 0, sizeof(core.ciram));
             core.palette[1] = 0x0Fu;
             core.ppu_mask = 0u;
+            core.ram[0x1Bu] = 0u;
             while (core.ppu_frames == 0u) ppu_tick(&core);
             if (!ppu_presentation_copy_indexed(&core, 1, presentation,
                     MM2_PRESENTATION_MAX_FRAME_PIXELS, &info) ||
                 info.mode != MM2_PRESENTATION_WIDE_GAMEPLAY ||
                 info.width != MM2_PRESENTATION_WIDE_FRAME_WIDTH ||
                 presentation[0] != 0x21u ||
+                presentation[info.width - 1u] != 0x21u ||
                 presentation[MM2_PRESENTATION_WIDE_MARGIN] != 0x21u ||
                 core.framebuffer[0] != 0x21u)
                 result = fail("vblank writes contaminated the completed presentation");

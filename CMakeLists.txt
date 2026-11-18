@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(MegaMan2NESStaticRecomp120 C CXX)
+project(MegaMan2NESStaticRecomp121 VERSION 1.2.1 LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)

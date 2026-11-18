@@ -12,6 +12,7 @@ import zipfile
 FILES = {
     "README.txt": "README.txt",
     "VERSION.txt": "VERSION.txt",
+    "RELEASE-NOTES.txt": "RELEASE-NOTES.txt",
     "Wide Screen (v1).txt": "Wide Screen (v1).txt",
     "THIRD-PARTY-NOTICES.txt": "THIRD-PARTY-NOTICES.txt",
     "third_party/SDL-LICENSE.txt": "SDL-LICENSE.txt",

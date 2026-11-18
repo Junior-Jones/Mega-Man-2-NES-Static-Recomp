@@ -144,7 +144,12 @@ int main(void) {
         return fail("Start/menu bank native fallback");
 
     core.ram[0x29u] = 0x0Eu;
-    core.ram[0x1Bu] = 1u;
+    core.ram[0x1Bu] = 4u;
+    if (!mm2_direct_core_presentation_info(&core, 1, &info) ||
+        info.reason != MM2_PRESENTATION_REASON_WIDE_GAMEPLAY)
+        return fail("full horizontal update queue retains margins");
+
+    core.ram[0x1Bu] = 5u;
     if (!mm2_direct_core_presentation_info(&core, 1, &info) ||
         info.reason != MM2_PRESENTATION_REASON_TRANSITION)
         return fail("transition native fallback");

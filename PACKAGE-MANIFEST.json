@@ -1,7 +1,7 @@
 {
   "format": "mega-man-2-static-recomp-source-package-v1",
-  "version": "1.2.0",
-  "date": "2026-08-29",
+  "version": "1.2.1",
+  "date": "2026-11-18",
   "rom_included": false,
   "playable_native_runtime": true,
   "native_cpu_core_linked": true,
@@ -98,5 +98,6 @@
   "accepted_gameplay_frame_hash": "FE9FE3CBA6BC8C03",
   "accepted_pcm_hash": "CD29F298AE150705",
   "test_summary": "MSVC /W4 /WX build passed; ROM-free tests cover CPU IRQ, APU timer/mixer/resampling, dot-timed PPU sprites, the completed-visible-frame presentation latch and the Windows frontend contract; the pinned Mesen differential trace passed; exact short, title, controlled-gameplay and Air Man PCM identities are AFF34F312F210308, EF91D83B8A8A3433, F92DDABB590F6DF0 and CD29F298AE150705; 20,149 identities plus headed/headless state, snapshot, hook, graphics and eight-stage oracles remain locked to their corrected outputs.",
+  "release_notes": "RELEASE-NOTES.txt",
   "entry_document": "START-HERE.md"
 }

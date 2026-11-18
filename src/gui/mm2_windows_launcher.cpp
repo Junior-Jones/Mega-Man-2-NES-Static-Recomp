@@ -160,7 +160,7 @@ void show_information(HWND owner,const wchar_t *title,const wchar_t *body,int wi
     if(!g_info_window){delete d;return;}ShowWindow(g_info_window,SW_SHOWNORMAL);BringWindowToTop(g_info_window);SetForegroundWindow(g_info_window);
 }
 void welcome(HWND owner){if(g_info_window)DestroyWindow(g_info_window);show_information(owner,L"Welcome to Mega Man 2 (NES)",
-    L"Welcome to Mega Man 2 (NES) Static Recomp 1.2.0\r\n\r\n"
+    L"Welcome to Mega Man 2 (NES) Static Recomp 1.2.1\r\n\r\n"
     L"Frontend shortcuts\r\n"
     L"Escape - Switch between the game and Launcher\r\n"
     L"F1 - Welcome and shortcut guide\r\n"
