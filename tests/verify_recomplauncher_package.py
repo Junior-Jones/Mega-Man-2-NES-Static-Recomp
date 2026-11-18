@@ -38,26 +38,32 @@ def main() -> None:
         invalid_rom = sandbox / "Wrong game 日.nes"
         invalid_rom.write_bytes(bytes(32))
         cases = [
-            (["--game", "--port-widescreen"], 2),
-            (["--game", str(sandbox / "Missing ROM.nes")], 3),
-            (["--port-widescreen", "--game", str(invalid_rom)], 3),
-            (["--game", str(invalid_rom), "--no-port-widescreen"], 3),
-            (["--game", str(invalid_rom), "--game", str(invalid_rom)], 2),
-            (["--unknown"], 2),
+            (["--game", "--port-widescreen"], 2, "Invalid launch options"),
+            (["--game", str(sandbox / "Missing ROM.nes")], 3, "cannot open ROM"),
+            (["--port-widescreen", "--game", str(invalid_rom)], 3, "not an iNES ROM"),
+            (["--game", str(invalid_rom), "--no-port-widescreen"], 3, "not an iNES ROM"),
+            (["--game", str(invalid_rom), "--game", str(invalid_rom)], 2, "Invalid launch options"),
+            (["--unknown"], 2, "Invalid launch options"),
         ]
-        for arguments, expected in cases:
-            result = subprocess.run([release / "Launcher.exe", *arguments], cwd=sandbox, timeout=10)
-            assert result.returncode == expected, (arguments, result.returncode)
-            assert str(result.returncode) in manifest["exit_codes"]
+        log_dir = release / "Logs"
+        for arguments, expected, expected_message in cases:
+            with subprocess.Popen([release / "Launcher.exe", *arguments], cwd=sandbox) as process:
+                try:
+                    return_code = process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    raise
+                assert return_code == expected, (arguments, return_code)
+                assert str(return_code) in manifest["exit_codes"]
+
+                logs = list(log_dir.glob(f"mm2-*-{process.pid:08X}.log"))
+                assert len(logs) == 1, (arguments, logs)
+                logged = logs[0].read_text(encoding="utf-8-sig")
+                assert expected_message in logged, (expected_message, logged)
+                assert str(invalid_rom) not in logged
 
         assert not (release / "settings.ini").exists()
-        logs = sorted((release / "Logs").glob("mm2-*.log"))
-        assert len(logs) == 5
-        logged = "\n".join(log.read_text(encoding="utf-8-sig") for log in logs)
-        assert "Invalid launch options" in logged
-        assert "cannot open ROM" in logged
-        assert "not an iNES ROM" in logged
-        assert str(invalid_rom) not in logged
+        assert len(list(log_dir.glob("mm2-*.log"))) == 5
 
     print("PASS RecompLauncher manifest, portable ZIP, Unicode ROM paths and launch exit codes")
 
