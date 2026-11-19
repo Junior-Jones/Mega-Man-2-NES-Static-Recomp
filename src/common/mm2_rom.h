@@ -19,10 +19,12 @@ typedef struct MM2Rom {
     int mirroring_vertical;
     int four_screen;
     int ines2;
+    int headered;
     uint16_t nmi_vector;
     uint16_t reset_vector;
     uint16_t irq_vector;
     char sha256[65];
+    char payload_sha256[65];
     uint32_t payload_crc32;
 } MM2Rom;
 int mm2_rom_load(const char *path, MM2Rom *rom, char *error, size_t error_cap);
@@ -31,6 +33,7 @@ int mm2_rom_load_wide(const wchar_t *path, MM2Rom *rom, char *error, size_t erro
 #endif
 void mm2_rom_free(MM2Rom *rom);
 int mm2_rom_is_expected(const MM2Rom *rom, char *reason, size_t reason_cap);
+const char *mm2_rom_snapshot_sha256(const MM2Rom *rom);
 int mm2_rom_write_json(const MM2Rom *rom, const char *path);
 #ifdef __cplusplus
 }

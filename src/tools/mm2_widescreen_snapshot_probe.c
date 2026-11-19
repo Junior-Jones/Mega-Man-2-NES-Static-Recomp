@@ -115,7 +115,7 @@ static int load_route_snapshot(const char *path, MM2DirectCore *core,
          memcmp(header.magic, "MM2PARTS", 8u) == 0 &&
          header.version == 14u &&
          header.core_size <= sizeof(*core) &&
-         strcmp(header.rom_sha256, rom->sha256) == 0;
+         strcmp(header.rom_sha256, mm2_rom_snapshot_sha256(rom)) == 0;
     if (ok) {
         memset(core, 0, sizeof(*core));
         ok = fread(core, 1u, header.core_size, file) == header.core_size &&

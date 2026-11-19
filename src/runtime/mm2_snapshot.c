@@ -223,7 +223,7 @@ MM2SnapshotStatus mm2_direct_core_snapshot_save(
     put64(header + 24, (uint64_t)state_size);
     put32(header + 32, mm2_direct_core_generated_crc32());
     put32(header + 36, MM2_SNAPSHOT_FLAG_TRANSIENT_AUDIO_REMOVED);
-    memcpy(header + 40, rom->sha256, 64u);
+    memcpy(header + 40, mm2_rom_snapshot_sha256(rom), 64u);
     memcpy(header + 104, digest, sizeof(digest));
     snprintf(temporary, strlen(path) + 5u, "%s.tmp", path);
     if (!ensure_parent_directory(path)) {
@@ -285,7 +285,7 @@ MM2SnapshotStatus mm2_direct_core_snapshot_load(
         set_error(error, error_capacity, "The snapshot format version is not supported.");
         goto done;
     }
-    if (memcmp(header + 40, rom->sha256, 64u) != 0) {
+    if (memcmp(header + 40, mm2_rom_snapshot_sha256(rom), 64u) != 0) {
         status = MM2_SNAPSHOT_ROM_MISMATCH;
         set_error(error, error_capacity, "The snapshot belongs to a different ROM.");
         goto done;

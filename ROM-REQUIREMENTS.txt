@@ -1,3 +1,15 @@
-Game: Mega Man 2
-File format: .nes
-Region: USA (NTSC)
+Mega Man 2 (USA), NTSC
+
+Use a clean dump of your own cartridge. Browse for a .nes or .bin file or
+put it in the portable Rom folder. Extract the ROM first if it is archived.
+
+Supported files contain the original 262,144-byte PRG ROM. An iNES or
+NES 2.0 file has a 16-byte header for mapper 1 (MMC1) and zero CHR ROM.
+A headerless file contains the 262,144-byte payload directly.
+
+Game payload SHA-256
+1e588d435e75d80c5c0b578b4fa8d196f2cf4346c11c9a7b7e435d768828ad01
+
+Compare the game payload hash when diagnosing a headered copy. The
+whole-file SHA-256 can vary with the header. Exit code 3 and the session
+log in Logs identify an unsupported or unreadable file.

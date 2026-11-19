@@ -32,6 +32,7 @@ def main() -> None:
         with zipfile.ZipFile(archive_path) as archive:
             assert archive.testzip() is None
             assert archive.read(f"{release.name}/{manifest_path.name}") == manifest_path.read_bytes()
+            assert archive.read(f"{release.name}/ROM-REQUIREMENTS.txt") == (source / "ROM-REQUIREMENTS.txt").read_bytes()
             assert all(Path(name).suffix.lower() != ".nes" for name in archive.namelist())
             assert all(Path(name).name not in {"settings.ini", "Logs"} for name in archive.namelist())
 
