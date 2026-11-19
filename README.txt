@@ -1,10 +1,12 @@
-Mega Man 2 (NES) Static Recomp - 1.2.2
+Mega Man 2 (NES) Static Recomp - 1.2.3
 
 Launcher.exe is a portable Windows 10/11 frontend for the Mega Man 2 static
 recompilation core. The original game ROM is not included.
 
-Place a legally obtained Mega Man 2 (USA) .nes ROM in the Rom folder, then
+Place a legally obtained Mega Man 2 (USA) .nes or .bin ROM in the Rom folder, then
 open Launcher.exe and select Run. Browse opens the Rom folder by default.
+Compatible iNES and NES 2.0 headers and headerless dumps are supported.
+See ROM-REQUIREMENTS.txt for details and the expected game payload hash.
 After a valid ROM is selected elsewhere, Browse remembers that folder in the
 single settings.ini file and uses it as the next default browsing location.
 RecompLauncher can pass that ROM and start gameplay directly. A shortcut or
@@ -16,10 +18,10 @@ per second; the frontend follows the static core at that rate.
 
 Wide Screen (v1) expands supported horizontal gameplay to 398x240 using live
 stage backgrounds, enemies and Mega Buster projectiles. Title screens, menus,
-vertical rooms, transitions and boss rooms remain centred 4:3 in version 1.2.2.
+vertical rooms, transitions and boss rooms remain centred 4:3 in version 1.2.3.
 Wide Screen (v1) is on for fresh settings. The toolbar checkbox saves your
 preference. See Wide Screen (v1).txt for details and RELEASE-NOTES.txt
-for the 1.2.2 controller fix and headless test results.
+for the 1.2.3 ROM compatibility fix and headless test results.
 
 Player 1 controls:
   Arrow keys  D-pad

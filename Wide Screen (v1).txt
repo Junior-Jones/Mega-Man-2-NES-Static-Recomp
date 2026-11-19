@@ -1,5 +1,5 @@
 Mega Man 2 NES Static Recomp
-Wide Screen (v1) - Version 1.2.2
+Wide Screen (v1) - Version 1.2.3
 
 Purpose
 Wide Screen (v1) expands eligible horizontal gameplay with real NES stage

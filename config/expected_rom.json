@@ -7,6 +7,7 @@
   "md5": "8e4bc5b03ffbd4ef91400e92e50dd294",
   "payload_crc32": "0FCFC04D",
   "payload_sha1": "2ec08f9341003ded125458df8697ca5ef09d2209",
+  "payload_sha256": "1e588d435e75d80c5c0b578b4fa8d196f2cf4346c11c9a7b7e435d768828ad01",
   "mapper": 1,
   "board_family": "MMC1/SxROM; database match SGROM with MMC1B2",
   "prg_bytes": 262144,

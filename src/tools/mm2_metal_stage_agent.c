@@ -61,7 +61,7 @@ static int save_snapshot(const char *path, const MM2DirectCore *core,
                              (uint32_t)sizeof(*core), {0}};
     MM2DirectCore copy = *core;
     FILE *file;
-    memcpy(header.rom_sha256, rom->sha256, 64u);
+    memcpy(header.rom_sha256, mm2_rom_snapshot_sha256(rom), 64u);
     header.rom_sha256[64] = '\0';
     copy.prg = NULL;
     file = fopen(path, "wb");
@@ -81,7 +81,7 @@ static int load_snapshot(const char *path, MM2DirectCore *core,
         fread(core, 1u, sizeof(*core), file) != sizeof(*core) ||
         memcmp(header.magic, "MM2PARTS", 8u) != 0 ||
         header.version != 14u || header.core_size != sizeof(*core) ||
-        strcmp(header.rom_sha256, rom->sha256) != 0) {
+        strcmp(header.rom_sha256, mm2_rom_snapshot_sha256(rom)) != 0) {
         fclose(file); return 0;
     }
     fclose(file);

@@ -1,10 +1,15 @@
 Mega Man 2 NES Static Recomp
-Version: 1.2.2
+Version: 1.2.3
 Platform: native 64-bit Windows
 Executable: Launcher.exe
 Frontend: native Win32 launcher; statically linked SDL3 video, audio and gamepad input
 Audio: native NES APU PCM at 44,100 Hz through a statically linked SDL3 audio stream
-ROM: Mega Man 2 (USA) .nes required externally and not included
+ROM: Mega Man 2 (USA) .nes or .bin required externally
+
+Changes in 1.2.3:
+- Verify the exact game payload so compatible iNES and NES 2.0 headers and headerless dumps load.
+- Discover .nes and .bin files in the portable Rom folder and recognize both in Browse.
+- Keep existing save states compatible across accepted formats and add headless validation tests.
 
 Changes in 1.2.2:
 - Added gamepad remapping to the Windows Controls dialog (F5), including DualSense and DualSense Edge.

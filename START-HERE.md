@@ -1,10 +1,10 @@
-# Mega Man 2 NES Static Recomp - 1.2.2
+# Mega Man 2 NES Static Recomp - 1.2.3
 
 This tree contains the native static-recompilation core, generated instruction
 identities, reproducibility evidence, tests, and the single-process Windows
 frontend. The original ROM is not included.
 
-Use a legally obtained Mega Man 2 (USA) `.nes` ROM matching
+Use a legally obtained Mega Man 2 (USA) `.nes` or `.bin` ROM matching
 `ROM-REQUIREMENTS.txt`.
 
 ## Windows frontend

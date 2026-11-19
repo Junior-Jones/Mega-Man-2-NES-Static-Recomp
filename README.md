@@ -1,4 +1,4 @@
-# Mega Man 2 (NES) Static Recomp 1.2.2
+# Mega Man 2 (NES) Static Recomp 1.2.3
 
 <a href="https://recomplauncher.com/game/mega-man-2-nes-static-recomp"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
 
@@ -6,7 +6,7 @@ Native Windows static recompilation frontend and core for Mega Man 2 on the
 Nintendo Entertainment System.
 
 The original game ROM is not included. Use a legally obtained Mega Man 2
-(USA) `.nes` ROM matching `ROM-REQUIREMENTS.txt` and place it in the portable
+(USA) `.nes` or `.bin` ROM matching `ROM-REQUIREMENTS.txt` and place it in the portable
 `Rom` folder.
 
 RecompLauncher can pass the verified ROM directly to Play using the manifest
@@ -16,7 +16,7 @@ shipped beside `Launcher.exe`. For a shortcut or script, use
 for that launch. The portable `Snapshots` and `Logs` folders hold save states
 and session diagnostics.
 
-See [RELEASE-NOTES.txt](RELEASE-NOTES.txt) for the 1.2.2 changes and headless tests.
+See [RELEASE-NOTES.txt](RELEASE-NOTES.txt) for the 1.2.3 changes and headless tests.
 
 ## What "fully static recompilation" means
 

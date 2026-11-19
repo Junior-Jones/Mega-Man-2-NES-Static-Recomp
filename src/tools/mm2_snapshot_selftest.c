@@ -41,10 +41,11 @@ static int write_file(const char *path, const uint8_t *data, size_t size,
     return ok;
 }
 
-static int exact_rom_test(const char *rom_path) {
+static int exact_rom_test(const char *rom_path, const char *restore_path) {
     static const char path[] =
         "mm2-exact-snapshot-selftest/Exact ROM.mm2state";
-    MM2Rom rom;
+    MM2Rom rom = {0};
+    MM2Rom restore_rom = {0};
     MM2DirectCore *core = mm2_direct_core_create();
     MM2FrameResult frame;
     char error[256];
@@ -52,9 +53,10 @@ static int exact_rom_test(const char *rom_path) {
     uint64_t saved_frame;
     uint64_t saved_cycles;
     uint16_t saved_pc;
+    uint8_t *snapshot = NULL;
+    size_t snapshot_size = 0u;
     unsigned index;
     int ok;
-    memset(&rom, 0, sizeof(rom));
     memset(error, 0, sizeof(error));
     memset(reason, 0, sizeof(reason));
     ok = core && mm2_rom_load(rom_path, &rom, error, sizeof(error));
@@ -70,15 +72,24 @@ static int exact_rom_test(const char *rom_path) {
     saved_pc = mm2_direct_core_program_counter(core);
     if (ok) ok = mm2_direct_core_snapshot_save(
         core, &rom, path, error, sizeof(error)) == MM2_SNAPSHOT_OK;
-    if (ok) ok = mm2_direct_core_advance_frame(core, 0u, 0u, 0u, &frame);
+    if (ok) ok = read_file(path, &snapshot, &snapshot_size) &&
+                 snapshot_size >= 104u &&
+                 memcmp(snapshot + 40,
+                     "49136b412ff61beac6e40d0bbcd8691a39a50cd2744fdcdde3401eed53d71edf",
+                     64u) == 0;
+    free(snapshot);
+    if (ok) ok = mm2_rom_load(restore_path, &restore_rom, error, sizeof(error)) &&
+                 mm2_rom_is_expected(&restore_rom, error, sizeof(error)) &&
+                 mm2_direct_core_reset(core, &restore_rom);
     if (ok) ok = mm2_direct_core_snapshot_load(
-        core, &rom, path, error, sizeof(error)) == MM2_SNAPSHOT_OK;
+        core, &restore_rom, path, error, sizeof(error)) == MM2_SNAPSHOT_OK;
     if (ok) ok = mm2_direct_core_frame_count(core) == saved_frame &&
                  mm2_direct_core_cpu_cycles(core) == saved_cycles &&
                  mm2_direct_core_program_counter(core) == saved_pc &&
                  mm2_direct_core_audio_available(core) == 0u;
     mm2_direct_core_destroy(core);
-    if (rom.file_data) mm2_rom_free(&rom);
+    mm2_rom_free(&rom);
+    mm2_rom_free(&restore_rom);
     remove(path);
     MM2_RMDIR("mm2-exact-snapshot-selftest");
     if (!ok) {
@@ -181,5 +192,5 @@ int main(int argc, char **argv) {
         return 1;
     }
     puts("PASS core-owned snapshots: atomic replace, ROM/core binding, hash, truncation and trailing-data rejection");
-    return argc == 2 ? exact_rom_test(argv[1]) : 0;
+    return argc >= 2 ? exact_rom_test(argv[1], argc == 3 ? argv[2] : argv[1]) : 0;
 }

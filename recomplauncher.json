@@ -5,12 +5,22 @@
   "repo": "Junior-Jones/Mega-Man-2-NES-Static-Recomp",
   "game": {
     "kind": "iso",
-    "label": "Your own Mega Man 2 (USA) NES ROM (.nes, with its iNES header).",
+    "label": "Your own Mega Man 2 (USA) NES ROM (.nes or .bin, with or without a header).",
     "dumps": [
       {
         "name": "Mega Man 2 (USA) iNES ROM",
         "size": 262160,
         "crc32": "5E268761"
+      },
+      {
+        "name": "Mega Man 2 (USA) NES 2.0 ROM",
+        "size": 262160,
+        "crc32": "B0AA716C"
+      },
+      {
+        "name": "Mega Man 2 (USA) headerless ROM",
+        "size": 262144,
+        "crc32": "0FCFC04D"
       }
     ]
   },
@@ -58,7 +68,7 @@
   ],
   "exit_codes": {
     "2": "The launch options are invalid. Use --game followed by the ROM path.",
-    "3": "Select the exact Mega Man 2 (USA) NES ROM with its iNES header.",
+    "3": "Select a clean Mega Man 2 (USA) NES ROM. Headered and headerless dumps are supported. Check the session log for details.",
     "4": "Mega Man 2 could not start. Check the latest session log for details.",
     "5": "The Mega Man 2 static core stopped. Check the latest session log for details."
   },

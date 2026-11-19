@@ -1,36 +1,28 @@
-Mega Man 2 (NES) Static Recomp 1.2.2
-18 November 2026
+Mega Man 2 (NES) Static Recomp 1.2.3
+19 November 2026
 
-Windows changes
+ROM compatibility
 
-- F5 Controls now has a Gamepad column. Choose an NES action, press the
-  desired gamepad button or stick direction, and select OK. Bindings are
-  saved in settings.ini and apply the next time gameplay starts.
-- Fixed the missing gamepad remapping path reported by a DualSense player.
-  The launcher now captures SDL gamepad input while Controls has focus,
-  including when the gameplay window is open.
-- Wide Screen (v1) is on when there is no saved preference. The launcher
-  honors existing On and Off choices. Eligible horizontal gameplay can
-  expand, while menus and boss rooms keep their centered original image.
-- Added a RecompLauncher manifest for verified ROM launch, display settings,
-  snapshots and session logs.
+- Fixed rejection of clean USA game data when an otherwise compatible NES
+  header differs from the original reference file.
+- Accepts the verified 256 KiB USA payload in compatible iNES and NES 2.0
+  containers or as a headerless dump. Select a .nes or .bin file.
+- Preserves save states across these formats and with the reference
+  ROM accepted by earlier versions.
+- Updated RecompLauncher fingerprints and included ROM-REQUIREMENTS.txt
+  in the portable package.
 
 Headless verification
 
-- SDL virtual DualSense, DualSense Edge, DualShock 4, Xbox 360 and Switch Pro
-  profiles passed button and stick capture, deadzone, labels, and NES
-  input checks with an unfocused SDL gameplay window. Hot-plugging passed.
-- The RecompLauncher test verified the default and optional Off setting,
-  the portable Windows archive, Unicode ROM paths and invalid launch handling.
-- Windows startup checks confirmed the fresh default, preservation of
-  existing and legacy Off settings, and one-launch widescreen overrides.
-- Replayed eight Robot Master stages and six Wily stages with the 1.2.2
-  core. Compared gameplay traces, frame captures and RAM with the 1.2.1
-  reference, including a Start-menu pause and resume, both Wily Machine 2
-  phases and the Alien fight.
+- Booted the Windows launcher into gameplay with legacy iNES, NES 2.0
+  and headerless ROMs. Also verified .BIN auto-discovery.
+- Checked alternate NES 2.0 size encoding, save and restore in both
+  directions across formats, and rejection of altered data, invalid
+  cartridge layouts, trailing data and truncated files.
+- The local regression suite passed the eight Robot Master stage and
+  visual oracles, as well as the audio, snapshot and controller checks.
 
 Windows 10 and 11 x64
 
-Extract the Windows ZIP and run Launcher.exe. The release requires a
-separately obtained Mega Man 2 (USA) NES ROM matching ROM-REQUIREMENTS.txt
-in the source package. Place it in the portable Rom folder or use Browse.
+Extract the Windows ZIP and run Launcher.exe. See ROM-REQUIREMENTS.txt
+for the supported USA game payload and troubleshooting information.

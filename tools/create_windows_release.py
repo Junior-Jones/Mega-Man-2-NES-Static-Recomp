@@ -12,6 +12,7 @@ import zipfile
 FILES = {
     "recomplauncher.json": "recomplauncher.json",
     "README.txt": "README.txt",
+    "ROM-REQUIREMENTS.txt": "ROM-REQUIREMENTS.txt",
     "VERSION.txt": "VERSION.txt",
     "RELEASE-NOTES.txt": "RELEASE-NOTES.txt",
     "Wide Screen (v1).txt": "Wide Screen (v1).txt",

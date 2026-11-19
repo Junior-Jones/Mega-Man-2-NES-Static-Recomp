@@ -183,13 +183,28 @@ bool validate_rom(const std::wstring &path,bool report){
 }
 bool path_is_file(const std::wstring &path){DWORD attributes=GetFileAttributesW(path.c_str());return attributes!=INVALID_FILE_ATTRIBUTES&&!(attributes&FILE_ATTRIBUTE_DIRECTORY);}
 bool try_default_rom(){
-    std::wstring dir=exe_directory()+L"\\Rom",preferred=dir+L"\\Mega Man 2 (USA).nes";CreateDirectoryW(dir.c_str(),nullptr);std::vector<std::wstring> candidates{preferred};
-    WIN32_FIND_DATAW data{};HANDLE find=FindFirstFileW((dir+L"\\*.nes").c_str(),&data);if(find!=INVALID_HANDLE_VALUE){do{if(!(data.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)){std::wstring candidate=dir+L"\\"+data.cFileName;if(_wcsicmp(candidate.c_str(),preferred.c_str())!=0)candidates.push_back(candidate);}}while(FindNextFileW(find,&data));FindClose(find);}
-    for(const auto &candidate:candidates)if(path_is_file(candidate)&&validate_rom(candidate,false))return true;return false;
+    const std::wstring dir=exe_directory()+L"\\Rom";
+    const std::wstring preferred=dir+L"\\Mega Man 2 (USA).nes";
+    CreateDirectoryW(dir.c_str(),nullptr);
+    if(path_is_file(preferred)&&validate_rom(preferred,false))return true;
+    for(const wchar_t *pattern:{L"\\*.nes",L"\\*.bin"}){
+        WIN32_FIND_DATAW data{};
+        HANDLE find=FindFirstFileW((dir+pattern).c_str(),&data);
+        if(find==INVALID_HANDLE_VALUE)continue;
+        bool found=false;
+        do{
+            if(data.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)continue;
+            const std::wstring candidate=dir+L"\\"+data.cFileName;
+            found=_wcsicmp(candidate.c_str(),preferred.c_str())!=0&&validate_rom(candidate,false);
+        }while(!found&&FindNextFileW(find,&data));
+        FindClose(find);
+        if(found)return true;
+    }
+    return false;
 }
 bool choose_rom(HWND owner){
     wchar_t path[32768]={};OPENFILENAMEW ofn{};ofn.lStructSize=sizeof(ofn);ofn.hwndOwner=owner;ofn.lpstrTitle=L"Select Mega Man 2 (USA) ROM";
-    ofn.lpstrFilter=L"NES ROM (*.nes)\0*.nes\0All files (*.*)\0*.*\0";ofn.lpstrFile=path;ofn.nMaxFile=(DWORD)MM2_COUNT(path);ofn.lpstrInitialDir=g_rom_folder.c_str();ofn.lpstrDefExt=L"nes";ofn.nFilterIndex=1;ofn.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
+    ofn.lpstrFilter=L"NES ROM (*.nes;*.bin)\0*.nes;*.bin\0All files (*.*)\0*.*\0";ofn.lpstrFile=path;ofn.nMaxFile=(DWORD)MM2_COUNT(path);ofn.lpstrInitialDir=g_rom_folder.c_str();ofn.lpstrDefExt=L"nes";ofn.nFilterIndex=1;ofn.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
     if(!GetOpenFileNameW(&ofn)||!validate_rom(path,true))return false;
     std::wstring selected_folder=parent_directory(path);if(path_is_directory(selected_folder)){g_rom_folder=selected_folder;save_settings();}return true;
 }
@@ -216,7 +231,7 @@ void show_information(HWND owner,const wchar_t *title,const wchar_t *body,int wi
     if(!g_info_window){delete d;return;}ShowWindow(g_info_window,SW_SHOWNORMAL);BringWindowToTop(g_info_window);SetForegroundWindow(g_info_window);
 }
 void welcome(HWND owner){if(g_info_window)DestroyWindow(g_info_window);show_information(owner,L"Welcome to Mega Man 2 (NES)",
-    L"Welcome to Mega Man 2 (NES) Static Recomp 1.2.2\r\n\r\n"
+    L"Welcome to Mega Man 2 (NES) Static Recomp 1.2.3\r\n\r\n"
     L"Frontend shortcuts\r\n"
     L"Escape - Switch between the game and Launcher\r\n"
     L"F1 - Welcome and shortcut guide\r\n"
@@ -227,7 +242,7 @@ void welcome(HWND owner){if(g_info_window)DestroyWindow(g_info_window);show_info
     L"F6 - Audio settings\r\n"
     L"F7 - Run the selected ROM\r\n"
     L"F8 - Capture the complete game window\r\n\r\n"
-    L"ROM title: Mega Man 2\r\nRegion: USA\r\nFile type: .nes\r\nPlace the ROM in the Rom folder or select Browse ROM.",620,560);}
+    L"ROM title: Mega Man 2\r\nRegion: USA\r\nFile type: .nes or .bin\r\nPlace the ROM in the Rom folder or select Browse ROM.",620,560);}
 
 struct SettingsData{HWND fullscreen,aspect,vsync,pause_focus,scale;};
 int combo_value(const int *values,size_t count,int value){for(size_t i=0;i<count;++i)if(values[i]==value)return (int)i;return 0;}
@@ -442,7 +457,7 @@ void game_view(HWND w){if(g_hidden)return;g_saved_style=(DWORD)GetWindowLongPtrW
     if(g_settings.fullscreen){MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromWindow(w,MONITOR_DEFAULTTONEAREST),&mi);g_fullscreen_active=true;SetWindowLongPtrW(w,GWL_STYLE,g_saved_style&~(DWORD)WS_OVERLAPPEDWINDOW);SetWindowLongPtrW(w,GWL_EXSTYLE,g_saved_ex_style&~(DWORD)WS_EX_WINDOWEDGE);SetWindowPos(w,HWND_TOP,mi.rcMonitor.left,mi.rcMonitor.top,mi.rcMonitor.right-mi.rcMonitor.left,mi.rcMonitor.bottom-mi.rcMonitor.top,SWP_FRAMECHANGED|SWP_SHOWWINDOW);}else{g_fullscreen_active=false;ShowWindow(w,SW_MAXIMIZE);}SetWindowTextW(w,L"Mega Man 2 (NES)");layout(w);InvalidateRect(w,nullptr,TRUE);SetFocus(w);}
 bool start(HWND w,bool report=true){
     if(g_rom_path.empty()){
-        if(report)MessageBoxW(w,L"Place Mega Man 2 (USA).nes in the Rom folder or select Browse ROM.",L"Mega Man 2 ROM",MB_OK|MB_ICONINFORMATION);
+        if(report)MessageBoxW(w,L"Place your Mega Man 2 (USA) ROM in the Rom folder or select Browse ROM.",L"Mega Man 2 ROM",MB_OK|MB_ICONINFORMATION);
         return false;
     }
     wchar_t error[512]={};
@@ -468,7 +483,7 @@ void reset_game(HWND w){if(mm2_windows_live_is_running()){mm2_windows_live_stop(
 LRESULT CALLBACK MainProc(HWND w,UINT m,WPARAM wp,LPARAM lp){switch(m){
     case WM_CREATE:g_main=w;g_video=CreateWindowExW(WS_EX_NOACTIVATE,L"STATIC",L"",WS_CHILD|WS_VISIBLE|WS_DISABLED|SS_BLACKRECT,0,80,1,1,w,nullptr,g_instance,nullptr);g_browse=CreateWindowW(L"BUTTON",L"&Browse",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,8,8,92,30,w,(HMENU)TOOL_BROWSE,g_instance,nullptr);g_play=CreateWindowW(L"BUTTON",L"&Play",WS_CHILD|WS_VISIBLE|WS_TABSTOP,106,8,72,30,w,(HMENU)TOOL_PLAY,g_instance,nullptr);g_reset=CreateWindowW(L"BUTTON",L"&Reset",WS_CHILD|WS_VISIBLE|WS_TABSTOP,184,8,66,30,w,(HMENU)TOOL_RESET,g_instance,nullptr);g_audio=CreateWindowW(L"BUTTON",L"&Audio",WS_CHILD|WS_VISIBLE|WS_TABSTOP,256,8,66,30,w,(HMENU)TOOL_AUDIO,g_instance,nullptr);g_settings_button=CreateWindowW(L"BUTTON",L"&Settings",WS_CHILD|WS_VISIBLE|WS_TABSTOP,328,8,82,30,w,(HMENU)TOOL_SETTINGS,g_instance,nullptr);g_keys=CreateWindowW(L"BUTTON",L"&Controls",WS_CHILD|WS_VISIBLE|WS_TABSTOP,416,8,76,30,w,(HMENU)TOOL_KEYS,g_instance,nullptr);g_fullscreen=CreateWindowW(L"BUTTON",L"&Full screen",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,498,10,112,26,w,(HMENU)TOOL_FULLSCREEN,g_instance,nullptr);g_widescreen=CreateWindowW(L"BUTTON",L"&Wide Screen (v1)",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,616,10,138,26,w,(HMENU)TOOL_WIDESCREEN,g_instance,nullptr);g_autorun=CreateWindowW(L"BUTTON",L"Auto-&Run",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,760,10,100,26,w,(HMENU)TOOL_AUTORUN,g_instance,nullptr);g_status=CreateWindowW(L"STATIC",L"Place Mega Man 2 (USA).nes in the portable Rom folder.",WS_CHILD|WS_VISIBLE|SS_LEFT|SS_NOPREFIX,12,48,800,24,w,nullptr,g_instance,nullptr);for(HWND c:{g_browse,g_play,g_reset,g_audio,g_settings_button,g_keys,g_fullscreen,g_widescreen,g_autorun,g_status})font(c);update();return 0;
     case WM_SIZE:layout(w);return 0;case WM_GETMINMAXINFO:((MINMAXINFO*)lp)->ptMinTrackSize={900,580};return 0;
-    case WM_COMMAND:{unsigned id=LOWORD(wp);if(id==CMD_BROWSE||(id==TOOL_BROWSE&&g_rom_path.empty())){if(choose_rom(w)){if(mm2_windows_live_is_running())mm2_windows_live_stop();update();}return 0;}if(id==CMD_RUN||(id==TOOL_BROWSE&&!g_rom_path.empty())){if(!mm2_windows_live_is_running())start(w);return 0;}if(id==TOOL_PLAY||id==CMD_PLAY){toggle_play(w);return 0;}if(id==TOOL_RESET||id==CMD_RESET){reset_game(w);return 0;}if(id==TOOL_AUDIO||id==CMD_AUDIO){open_audio(w);return 0;}if(id==TOOL_SETTINGS||id==CMD_SETTINGS){open_settings(w);return 0;}if(id==TOOL_KEYS||id==CMD_KEYS){open_bindings(w);return 0;}if(id==TOOL_FULLSCREEN||id==CMD_FULLSCREEN){if(id==CMD_FULLSCREEN)SendMessageW(g_fullscreen,BM_SETCHECK,SendMessageW(g_fullscreen,BM_GETCHECK,0,0)==BST_CHECKED?BST_UNCHECKED:BST_CHECKED,0);g_settings.fullscreen=SendMessageW(g_fullscreen,BM_GETCHECK,0,0)==BST_CHECKED;save_settings();update();return 0;}if(id==TOOL_WIDESCREEN||id==CMD_WIDESCREEN){if(id==CMD_WIDESCREEN)SendMessageW(g_widescreen,BM_SETCHECK,SendMessageW(g_widescreen,BM_GETCHECK,0,0)==BST_CHECKED?BST_UNCHECKED:BST_CHECKED,0);g_widescreen_override=-1;g_settings.wide_screen=SendMessageW(g_widescreen,BM_GETCHECK,0,0)==BST_CHECKED;mm2_windows_live_set_wide_screen(g_settings.wide_screen!=0);save_settings();update();status(g_settings.wide_screen?L"Wide Screen enabled for supported gameplay.":L"Wide Screen disabled.");return 0;}if(id==TOOL_AUTORUN||id==CMD_AUTORUN){if(id==CMD_AUTORUN)SendMessageW(g_autorun,BM_SETCHECK,SendMessageW(g_autorun,BM_GETCHECK,0,0)==BST_CHECKED?BST_UNCHECKED:BST_CHECKED,0);g_auto_run=SendMessageW(g_autorun,BM_GETCHECK,0,0)==BST_CHECKED;save_settings();update();status(g_auto_run?L"Auto-Run enabled for the next launch.":L"Auto-Run disabled.");return 0;}if(id==CMD_SAVE){if(!mm2_windows_live_quick_save())MessageBoxW(w,L"The snapshot could not be saved.",L"Save Snapshot",MB_OK|MB_ICONERROR);return 0;}if(id==CMD_LOAD){if(!mm2_windows_live_quick_load())MessageBoxW(w,L"No compatible snapshot was found.",L"Load Snapshot",MB_OK|MB_ICONINFORMATION);return 0;}if(id==CMD_SCREENSHOT){if(!mm2_windows_live_take_screenshot())MessageBoxW(w,L"The game-window screenshot could not be saved.",L"Capture Game Window",MB_OK|MB_ICONERROR);return 0;}if(id==CMD_ABOUT){show_information(w,L"About Mega Man 2",L"F1 - Welcome and shortcut guide\r\n\r\nMega Man 2 NES Static Recompilation\r\n\r\nTitle: Mega Man 2\r\nRegion: USA\r\nFile type: .nes",520,320);return 0;}if(id==CMD_EXIT){DestroyWindow(w);return 0;}break;}
+    case WM_COMMAND:{unsigned id=LOWORD(wp);if(id==CMD_BROWSE||(id==TOOL_BROWSE&&g_rom_path.empty())){if(choose_rom(w)){if(mm2_windows_live_is_running())mm2_windows_live_stop();update();}return 0;}if(id==CMD_RUN||(id==TOOL_BROWSE&&!g_rom_path.empty())){if(!mm2_windows_live_is_running())start(w);return 0;}if(id==TOOL_PLAY||id==CMD_PLAY){toggle_play(w);return 0;}if(id==TOOL_RESET||id==CMD_RESET){reset_game(w);return 0;}if(id==TOOL_AUDIO||id==CMD_AUDIO){open_audio(w);return 0;}if(id==TOOL_SETTINGS||id==CMD_SETTINGS){open_settings(w);return 0;}if(id==TOOL_KEYS||id==CMD_KEYS){open_bindings(w);return 0;}if(id==TOOL_FULLSCREEN||id==CMD_FULLSCREEN){if(id==CMD_FULLSCREEN)SendMessageW(g_fullscreen,BM_SETCHECK,SendMessageW(g_fullscreen,BM_GETCHECK,0,0)==BST_CHECKED?BST_UNCHECKED:BST_CHECKED,0);g_settings.fullscreen=SendMessageW(g_fullscreen,BM_GETCHECK,0,0)==BST_CHECKED;save_settings();update();return 0;}if(id==TOOL_WIDESCREEN||id==CMD_WIDESCREEN){if(id==CMD_WIDESCREEN)SendMessageW(g_widescreen,BM_SETCHECK,SendMessageW(g_widescreen,BM_GETCHECK,0,0)==BST_CHECKED?BST_UNCHECKED:BST_CHECKED,0);g_widescreen_override=-1;g_settings.wide_screen=SendMessageW(g_widescreen,BM_GETCHECK,0,0)==BST_CHECKED;mm2_windows_live_set_wide_screen(g_settings.wide_screen!=0);save_settings();update();status(g_settings.wide_screen?L"Wide Screen enabled for supported gameplay.":L"Wide Screen disabled.");return 0;}if(id==TOOL_AUTORUN||id==CMD_AUTORUN){if(id==CMD_AUTORUN)SendMessageW(g_autorun,BM_SETCHECK,SendMessageW(g_autorun,BM_GETCHECK,0,0)==BST_CHECKED?BST_UNCHECKED:BST_CHECKED,0);g_auto_run=SendMessageW(g_autorun,BM_GETCHECK,0,0)==BST_CHECKED;save_settings();update();status(g_auto_run?L"Auto-Run enabled for the next launch.":L"Auto-Run disabled.");return 0;}if(id==CMD_SAVE){if(!mm2_windows_live_quick_save())MessageBoxW(w,L"The snapshot could not be saved.",L"Save Snapshot",MB_OK|MB_ICONERROR);return 0;}if(id==CMD_LOAD){if(!mm2_windows_live_quick_load())MessageBoxW(w,L"No compatible snapshot was found.",L"Load Snapshot",MB_OK|MB_ICONINFORMATION);return 0;}if(id==CMD_SCREENSHOT){if(!mm2_windows_live_take_screenshot())MessageBoxW(w,L"The game-window screenshot could not be saved.",L"Capture Game Window",MB_OK|MB_ICONERROR);return 0;}if(id==CMD_ABOUT){show_information(w,L"About Mega Man 2",L"F1 - Welcome and shortcut guide\r\n\r\nMega Man 2 NES Static Recompilation\r\n\r\nTitle: Mega Man 2\r\nRegion: USA\r\nFile type: .nes or .bin",520,320);return 0;}if(id==CMD_EXIT){DestroyWindow(w);return 0;}break;}
     case WM_KEYDOWN:if(wp==VK_ESCAPE){if((lp&(1L<<30))==0)toggle_play(w);return 0;}if(wp==VK_F1){if(g_hidden)toggle_play(w);welcome(w);return 0;}if(wp==VK_F2){SendMessageW(w,WM_COMMAND,CMD_SAVE,0);return 0;}if(wp==VK_F3){SendMessageW(w,WM_COMMAND,CMD_LOAD,0);return 0;}if(wp==VK_F4){if(g_hidden)toggle_play(w);open_settings(w);return 0;}if(wp==VK_F5){if(g_hidden)toggle_play(w);open_bindings(w);return 0;}if(wp==VK_F6){if(g_hidden)toggle_play(w);open_audio(w);return 0;}if(wp==VK_F7){if(!mm2_windows_live_is_running())SendMessageW(w,WM_COMMAND,CMD_RUN,0);return 0;}if(wp==VK_F8){SendMessageW(w,WM_COMMAND,CMD_SCREENSHOT,0);return 0;}if(mm2_windows_live_is_running()&&!mm2_windows_live_is_paused()){mm2_windows_live_key_event(WM_KEYDOWN,wp);return 0;}break;
     case WM_KEYUP:if(mm2_windows_live_is_running()&&!mm2_windows_live_is_paused()){mm2_windows_live_key_event(WM_KEYUP,wp);return 0;}break;
     case WM_KILLFOCUS:if(g_settings.pause_on_focus_loss&&g_hidden&&mm2_windows_live_is_running()&&!mm2_windows_live_is_paused())toggle_play(w);return 0;
